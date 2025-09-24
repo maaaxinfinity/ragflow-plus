@@ -310,6 +310,9 @@ def upload():
             location += "_"
         blob = request.files["file"].read()
         STORAGE_IMPL.put(kb_id, location, blob)
+        # 从文件名中提取扩展名作为 suffix
+        file_suffix = os.path.splitext(filename)[1].lstrip('.') if filename else ''
+        
         doc = {
             "id": get_uuid(),
             "kb_id": kb.id,
@@ -321,6 +324,7 @@ def upload():
             "location": location,
             "size": len(blob),
             "thumbnail": thumbnail(filename, blob),
+            "suffix": file_suffix,
         }
 
         form_data = request.form

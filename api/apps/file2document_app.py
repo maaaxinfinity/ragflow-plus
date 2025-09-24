@@ -16,6 +16,7 @@
 
 from api.db.services.file2document_service import File2DocumentService
 from api.db.services.file_service import FileService
+import os
 
 from flask import request
 from flask_login import login_required, current_user
@@ -70,6 +71,9 @@ def convert():
                         return get_data_error_result(
                             message="Can't find this file!")
 
+                    # 从文件名中提取扩展名作为 suffix
+                    file_suffix = os.path.splitext(file.name)[1].lstrip('.') if file.name else ''
+                    
                     doc = DocumentService.insert({
                         "id": get_uuid(),
                         "kb_id": kb.id,
@@ -79,7 +83,8 @@ def convert():
                         "type": file.type,
                         "name": file.name,
                         "location": file.location,
-                        "size": file.size
+                        "size": file.size,
+                        "suffix": file_suffix,
                     })
                     file2document = File2DocumentService.insert({
                         "id": get_uuid(),

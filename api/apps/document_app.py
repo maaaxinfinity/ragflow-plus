@@ -110,6 +110,9 @@ def web_crawl():
         while STORAGE_IMPL.obj_exist(kb_id, location):
             location += "_"
         STORAGE_IMPL.put(kb_id, location, blob)
+        # 从文件名中提取扩展名作为 suffix
+        file_suffix = os.path.splitext(filename)[1].lstrip('.') if filename else ''
+        
         doc = {
             "id": get_uuid(),
             "kb_id": kb.id,
@@ -121,6 +124,7 @@ def web_crawl():
             "location": location,
             "size": len(blob),
             "thumbnail": thumbnail(filename, blob),
+            "suffix": file_suffix,
         }
         if doc["type"] == FileType.VISUAL:
             doc["parser_id"] = ParserType.PICTURE.value
@@ -165,6 +169,7 @@ def create():
                 "name": req["name"],
                 "location": "",
                 "size": 0,
+                "suffix": "",
             }
         )
         return get_json_result(data=doc.to_json())

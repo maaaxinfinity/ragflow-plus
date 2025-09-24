@@ -761,6 +761,11 @@ class Document(DataBaseModel):
     process_begin_at = DateTimeField(null=True, index=True)
     process_duration = FloatField(default=0)
     meta_fields = JSONField(null=True, default={})
+    suffix = CharField(
+        max_length=32,
+        null=False,
+        help_text="file extension suffix",
+        index=True)
 
     run = CharField(
         max_length=1,
@@ -1119,6 +1124,14 @@ def migrate_db():
             migrate(
                 migrator.add_column("task", "task_type",
                                     CharField(max_length=32, null=False, default=""))
+            )
+        except Exception:
+            pass
+        try:
+            migrate(
+                migrator.add_column("document", "suffix",
+                                    CharField(max_length=32, null=False, default="", index=True,
+                                              help_text="file extension suffix"))
             )
         except Exception:
             pass

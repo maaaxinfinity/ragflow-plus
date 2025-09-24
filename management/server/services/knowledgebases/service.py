@@ -1,4 +1,5 @@
 import json
+import os
 import threading
 import time
 import traceback
@@ -628,6 +629,9 @@ class KnowledgebaseService:
                     }
                 )
                 default_source_type = "local"
+                
+                # 从文件名中提取文件扩展名作为 suffix
+                file_suffix = os.path.splitext(file_name)[1].lstrip('.') if file_name else ''
 
                 # 插入document表
                 doc_query = """
@@ -636,13 +640,13 @@ class KnowledgebaseService:
                         thumbnail, kb_id, parser_id, parser_config, source_type,
                         type, created_by, name, location, size,
                         token_num, chunk_num, progress, progress_msg, process_begin_at,
-                        process_duration, meta_fields, run, status
+                        process_duration, meta_fields, run, status, suffix
                     ) VALUES (
                         %s, %s, %s, %s, %s,
                         %s, %s, %s, %s, %s,
                         %s, %s, %s, %s, %s,
                         %s, %s, %s, %s, %s,
-                        %s, %s, %s, %s
+                        %s, %s, %s, %s, %s
                     )
                 """
 
@@ -671,6 +675,7 @@ class KnowledgebaseService:
                     None,
                     "0",
                     "1",  # process_duration到status
+                    file_suffix,  # suffix
                 ]
 
                 cursor.execute(doc_query, doc_params)

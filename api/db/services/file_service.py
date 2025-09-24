@@ -367,6 +367,9 @@ class FileService(CommonService):
                     thumbnail_location = f'thumbnail_{doc_id}.png'
                     STORAGE_IMPL.put(kb.id, thumbnail_location, img)
 
+                # 从文件名中提取扩展名作为 suffix
+                file_suffix = os.path.splitext(filename)[1].lstrip('.') if filename else ''
+                
                 doc = {
                     "id": doc_id,
                     "kb_id": kb.id,
@@ -377,7 +380,8 @@ class FileService(CommonService):
                     "name": filename,
                     "location": location,
                     "size": len(blob),
-                    "thumbnail": thumbnail_location
+                    "thumbnail": thumbnail_location,
+                    "suffix": file_suffix,
                 }
                 DocumentService.insert(doc)
 
