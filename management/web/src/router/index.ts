@@ -136,6 +136,24 @@ export const constantRoutes: RouteRecordRaw[] = [
     ]
   },
   {
+    path: "/agent",
+    component: Layouts,
+    redirect: "/agent/index",
+    children: [
+      {
+        path: "index",
+        component: () => import("@/pages/agent/index.vue"),
+        name: "Agent",
+        meta: {
+          title: "默认Agent配置",
+          svgIcon: "agent",
+          affix: false,
+          keepAlive: true
+        }
+      }
+    ]
+  },
+  {
     path: "/conversation",
     component: Layouts,
     redirect: "/conversation/index",

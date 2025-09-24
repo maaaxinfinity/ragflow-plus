@@ -1,5 +1,5 @@
 import type { AxiosResponse } from "axios"
-import type { FileData, PageQuery, PageResult } from "./type"
+import type { FileData, PageQuery, PageResult, FileTreeNode } from "./type"
 import { request } from "@/http/axios"
 import axios from "axios"
 
@@ -7,11 +7,36 @@ import axios from "axios"
  * 获取文件列表
  * @param params 查询参数
  */
-export function getFileListApi(params: PageQuery & { name?: string }) {
+export function getFileListApi(params: PageQuery & { name?: string, parent_id?: string }) {
   return request<{ data: PageResult<FileData>, code: number, message: string }>({
     url: "/api/v1/files",
     method: "get",
     params
+  })
+}
+
+/**
+ * 获取文件树结构
+ * @param parent_id 父文件夹ID，不传则获取根目录
+ */
+export function getFileTreeApi(parent_id?: string) {
+  return request<{ data: FileTreeNode[], code: number, message: string }>({
+    url: "/api/v1/files/tree",
+    method: "get",
+    params: { parent_id }
+  })
+}
+
+/**
+ * 创建文件夹
+ * @param name 文件夹名称
+ * @param parent_id 父文件夹ID
+ */
+export function createFolderApi(name: string, parent_id?: string) {
+  return request<{ data: FileData, code: number, message: string }>({
+    url: "/api/v1/files/folder",
+    method: "post",
+    data: { name, parent_id }
   })
 }
 

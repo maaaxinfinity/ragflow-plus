@@ -49,15 +49,17 @@ def filename_type(filename):
     return FileType.OTHER.value
 
 
-def get_files_list(current_page, page_size, name_filter="", sort_by="create_time", sort_order="desc"):
+def get_files_list(current_page, page_size, name_filter="", sort_by="create_time", sort_order="desc", parent_id=None):
     """
     获取文件列表
 
     Args:
         current_page: 当前页码
         page_size: 每页大小
-        parent_id: 父文件夹ID
         name_filter: 文件名过滤条件
+        sort_by: 排序字段
+        sort_order: 排序方式
+        parent_id: 父文件夹ID
 
     Returns:
         tuple: (文件列表, 总数)
@@ -71,8 +73,16 @@ def get_files_list(current_page, page_size, name_filter="", sort_by="create_time
         cursor = conn.cursor(dictionary=True)
 
         # 构建查询条件
-        where_clause = "WHERE f.type != 'folder'"  # 排除文件夹类型
+        where_clause = "WHERE 1=1"
         params = []
+
+        # 如果指定了parent_id，则查询该文件夹下的文件
+        if parent_id:
+            where_clause += " AND f.parent_id = %s"
+            params.append(parent_id)
+        else:
+            # 如果没有指定parent_id，查询根目录文件（parent_id为空或等于自身ID的根文件夹）
+            where_clause += " AND (f.parent_id IS NULL OR f.parent_id = '' OR f.parent_id = f.id)"
 
         if name_filter:
             where_clause += " AND f.name LIKE %s"
@@ -103,13 +113,9 @@ def get_files_list(current_page, page_size, name_filter="", sort_by="create_time
             {sort_clause}
             LIMIT %s OFFSET %s
         """
-        cursor.execute(query, params + [page_size, offset])
+        params.extend([page_size, offset])
+        cursor.execute(query, params)
         files = cursor.fetchall()
-
-        # 格式化 create_date
-        for file_item in files:
-            if isinstance(file_item.get("create_date"), datetime):
-                file_item["create_date"] = file_item["create_date"].strftime("%Y-%m-%d %H:%M:%S")
 
         cursor.close()
         conn.close()
@@ -117,6 +123,142 @@ def get_files_list(current_page, page_size, name_filter="", sort_by="create_time
         return files, total
 
     except Exception as e:
+        print(f"获取文件列表失败: {str(e)}")
+        return [], 0
+
+
+def get_file_tree(parent_id=None):
+    """
+    获取文件树结构
+
+    Args:
+        parent_id: 父文件夹ID，None表示获取根目录
+
+    Returns:
+        list: 文件树结构
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # 构建查询条件
+        if parent_id:
+            where_clause = "WHERE parent_id = %s"
+            params = [parent_id]
+        else:
+            # 查询根目录文件（parent_id为空或等于自身ID的根文件夹）
+            where_clause = "WHERE (parent_id IS NULL OR parent_id = '' OR parent_id = id)"
+            params = []
+
+        # 查询文件和文件夹
+        query = f"""
+            SELECT id, name, parent_id, type, size, location, source_type, create_time, create_date
+            FROM file
+            {where_clause}
+            ORDER BY type DESC, name ASC
+        """
+        cursor.execute(query, params)
+        items = cursor.fetchall()
+
+        # 构建树形结构
+        tree_data = []
+        for item in items:
+            node = {
+                "id": item["id"],
+                "name": item["name"],
+                "type": item["type"],
+                "parent_id": item.get("parent_id"),
+                "size": item.get("size", 0),
+                "location": item.get("location", ""),
+                "create_time": item.get("create_time"),
+                "create_date": item["create_date"].strftime("%Y-%m-%d %H:%M:%S") if isinstance(item.get("create_date"), datetime) else item.get("create_date"),
+                "expanded": False,
+                "checked": False
+            }
+            
+            # 如果是文件夹，递归获取子项
+            if item["type"] == "folder":
+                node["children"] = get_file_tree(item["id"])
+            else:
+                node["children"] = []
+                
+            tree_data.append(node)
+
+        cursor.close()
+        conn.close()
+
+        return tree_data
+
+    except Exception as e:
+        print(f"获取文件树失败: {str(e)}")
+        return []
+
+
+def create_folder(name, parent_id=None):
+    """
+    创建文件夹
+
+    Args:
+        name: 文件夹名称
+        parent_id: 父文件夹ID
+
+    Returns:
+        dict: 创建的文件夹信息
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # 检查同级目录下是否已存在同名文件夹
+        if parent_id:
+            check_query = "SELECT COUNT(*) as count FROM file WHERE parent_id = %s AND name = %s"
+            cursor.execute(check_query, [parent_id, name])
+        else:
+            check_query = "SELECT COUNT(*) as count FROM file WHERE (parent_id IS NULL OR parent_id = '' OR parent_id = id) AND name = %s"
+            cursor.execute(check_query, [name])
+            
+        if cursor.fetchone()["count"] > 0:
+            raise ValueError(f"文件夹 '{name}' 已存在")
+
+        # 创建文件夹记录
+        folder_id = get_uuid()
+        current_time = int(datetime.now().timestamp())
+        current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        # 如果没有指定parent_id，则创建根文件夹（parent_id等于自身ID）
+        actual_parent_id = parent_id if parent_id else folder_id
+
+        folder_data = {
+            "id": folder_id,
+            "parent_id": actual_parent_id,
+            "tenant_id": "system",  # 默认租户
+            "created_by": "system",  # 默认创建者
+            "name": name,
+            "type": "folder",
+            "size": 0,
+            "location": "",
+            "source_type": FileSource.LOCAL.value,
+            "create_time": current_time,
+            "create_date": current_date,
+            "update_time": current_time,
+            "update_date": current_date,
+        }
+
+        # 插入数据库
+        insert_query = """
+            INSERT INTO file (id, parent_id, tenant_id, created_by, name, type, size, location, source_type, create_time, create_date, update_time, update_date)
+            VALUES (%(id)s, %(parent_id)s, %(tenant_id)s, %(created_by)s, %(name)s, %(type)s, %(size)s, %(location)s, %(source_type)s, %(create_time)s, %(create_date)s, %(update_time)s, %(update_date)s)
+        """
+        cursor.execute(insert_query, folder_data)
+        conn.commit()
+
+        cursor.close()
+        conn.close()
+
+        return folder_data
+
+    except Exception as e:
+        print(f"创建文件夹失败: {str(e)}")
         raise e
 
 

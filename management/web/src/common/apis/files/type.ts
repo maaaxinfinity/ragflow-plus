@@ -10,8 +10,10 @@ export interface FileData {
   size: number
   /** 文件类型 */
   type: string
+  /** 父文件夹ID */
+  parent_id?: string
   /** 知识库ID */
-  kb_id: string
+  kb_id?: string
   /** 存储位置 */
   location: string
   /** 创建时间 */
@@ -20,6 +22,40 @@ export interface FileData {
   update_time?: number
   /** 创建日期 */
   create_date?: string
+  /** 子文件夹和文件（用于树形结构） */
+  children?: FileData[]
+  /** 是否展开（前端状态） */
+  expanded?: boolean
+}
+
+/**
+ * 文件夹数据类型
+ */
+export interface FolderData extends FileData {
+  type: 'folder'
+  children: FileData[]
+}
+
+/**
+ * 文件树节点
+ */
+export interface FileTreeNode {
+  /** 节点ID */
+  id: string
+  /** 节点名称 */
+  name: string
+  /** 节点类型 */
+  type: 'file' | 'folder'
+  /** 父节点ID */
+  parent_id?: string
+  /** 子节点 */
+  children?: FileTreeNode[]
+  /** 是否展开 */
+  expanded?: boolean
+  /** 是否选中 */
+  checked?: boolean
+  /** 原始文件数据 */
+  data?: FileData
 }
 
 /**

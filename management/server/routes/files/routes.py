@@ -1,7 +1,7 @@
 from io import BytesIO
 
 from flask import current_app, jsonify, request, send_file
-from services.files.service import batch_delete_files, delete_file, download_file_from_minio, get_all_file_ids, get_file_info, get_files_list, handle_chunk_upload, merge_chunks, upload_files_to_server
+from services.files.service import batch_delete_files, create_folder, delete_file, download_file_from_minio, get_all_file_ids, get_file_info, get_files_list, get_file_tree, handle_chunk_upload, merge_chunks, upload_files_to_server
 from services.files.utils import FileType
 
 from .. import files_bp
@@ -36,15 +36,52 @@ def get_files():
         current_page = int(request.args.get("currentPage", 1))
         page_size = int(request.args.get("size", 10))
         name_filter = request.args.get("name", "")
+        parent_id = request.args.get("parent_id", None)
         sort_by = request.args.get("sort_by", "create_time")
         sort_order = request.args.get("sort_order", "desc")
 
-        result, total = get_files_list(current_page, page_size, name_filter, sort_by, sort_order)
+        result, total = get_files_list(current_page, page_size, name_filter, sort_by, sort_order, parent_id)
 
         return jsonify({"code": 0, "data": {"list": result, "total": total}, "message": "获取文件列表成功"})
 
     except Exception as e:
         return jsonify({"code": 500, "message": f"获取文件列表失败: {str(e)}"}), 500
+
+
+@files_bp.route("/tree", methods=["GET", "OPTIONS"])
+def get_files_tree():
+    """获取文件树结构的API端点"""
+    if request.method == "OPTIONS":
+        return "", 200
+
+    try:
+        parent_id = request.args.get("parent_id", None)
+        tree_data = get_file_tree(parent_id)
+        return jsonify({"code": 0, "data": tree_data, "message": "获取文件树成功"})
+
+    except Exception as e:
+        return jsonify({"code": 500, "message": f"获取文件树失败: {str(e)}"}), 500
+
+
+@files_bp.route("/folder", methods=["POST", "OPTIONS"])
+def create_folder_route():
+    """创建文件夹的API端点"""
+    if request.method == "OPTIONS":
+        return "", 200
+
+    try:
+        data = request.json
+        name = data.get("name")
+        parent_id = data.get("parent_id", None)
+
+        if not name:
+            return jsonify({"code": 400, "message": "文件夹名称不能为空"}), 400
+
+        folder_data = create_folder(name, parent_id)
+        return jsonify({"code": 0, "data": folder_data, "message": "创建文件夹成功"})
+
+    except Exception as e:
+        return jsonify({"code": 500, "message": f"创建文件夹失败: {str(e)}"}), 500
 
 
 @files_bp.route("/<string:file_id>/download", methods=["GET", "OPTIONS"])

@@ -2,6 +2,8 @@
 import type { SequentialBatchTaskProgress } from "@@/apis/kbs/document"
 import type { FormInstance, UploadFile, UploadProps } from "element-plus"
 import DocumentParseProgress from "@/layouts/components/DocumentParseProgress/index.vue"
+import FolderSelector from "@@/components/FolderSelector.vue"
+import KnowledgeBaseTree from "@@/components/KnowledgeBaseTree.vue"
 import {
   deleteDocumentApi,
   getDocumentListApi,
@@ -704,13 +706,112 @@ const filePaginationData = reactive({
   layout: "total, sizes, prev, pager, next, jumper"
 })
 
+// 文档展示模式
+const documentDisplayMode = ref<'table' | 'tree'>('table')
+
+// 处理展示模式变化
+function handleDisplayModeChange(mode: 'table' | 'tree') {
+  documentDisplayMode.value = mode
+}
+
+// 处理文档点击（树形视图）
+function handleDocumentClick(document: any) {
+  console.log('文档点击:', document)
+}
+
+// 处理文档解析完成（树形视图）
+function handleDocumentParsed(document: any) {
+  console.log('文档解析完成:', document)
+  // 可以在这里刷新文档列表或更新状态
+}
+
+// 处理文档移除（树形视图）
+function handleDocumentRemoved(document: any) {
+  console.log('文档已移除:', document)
+  // 刷新知识库列表以更新文档数量
+  getTableData()
+}
+
+// 文件夹选择器
+const folderSelectorVisible = ref(false)
+
 // 处理添加文档
 function handleAddDocument() {
-  addDocumentDialogVisible.value = true
-  // 重置选择
-  selectedFiles.value = []
-  // 获取文件列表
-  getFileList()
+  // 显示文件夹选择器而不是原来的文件列表
+  folderSelectorVisible.value = true
+}
+
+// 处理文件夹选择确认
+function handleFolderSelectorConfirm(selectedItems: any[]) {
+  console.log('选中的项目:', selectedItems)
+  
+  // 提取文件ID
+  const fileIds: string[] = []
+  
+  selectedItems.forEach(item => {
+    if (item.type === 'file') {
+      fileIds.push(item.id)
+    } else if (item.type === 'folder') {
+      // 如果选择了文件夹，需要获取文件夹下的所有文件
+      // 这里可以递归获取文件夹下的所有文件ID
+      const folderFileIds = extractFileIdsFromFolder(item.data)
+      fileIds.push(...folderFileIds)
+    }
+  })
+  
+  if (fileIds.length === 0) {
+    ElMessage.warning('请选择至少一个文件')
+    return
+  }
+  
+  // 调用添加文档到知识库的API
+  confirmAddDocumentFromFolder(fileIds)
+}
+
+// 从文件夹数据中提取所有文件ID
+function extractFileIdsFromFolder(folderData: any): string[] {
+  const fileIds: string[] = []
+  
+  if (folderData.children) {
+    folderData.children.forEach((child: any) => {
+      if (child.type === 'file') {
+        fileIds.push(child.id)
+      } else if (child.type === 'folder' && child.children) {
+        fileIds.push(...extractFileIdsFromFolder(child))
+      }
+    })
+  }
+  
+  return fileIds
+}
+
+// 确认添加文档（从文件夹选择器）
+async function confirmAddDocumentFromFolder(fileIds: string[]) {
+  if (!currentKnowledgeBase.value) {
+    ElMessage.error('请先选择知识库')
+    return
+  }
+  
+  try {
+    isAddingDocument.value = true
+    
+    const response = await addDocumentToKnowledgeBaseApi({
+      kb_id: currentKnowledgeBase.value.id,
+      file_ids: fileIds
+    })
+    
+    ElMessage.success(`成功添加 ${fileIds.length} 个文件到知识库`)
+    folderSelectorVisible.value = false
+    
+    // 刷新文档列表
+    getDocumentList()
+    
+  } catch (error: any) {
+    console.error('添加文档失败:', error)
+    ElMessage.error(`添加文档失败: ${error?.message || '未知错误'}`)
+  } finally {
+    isAddingDocument.value = false
+  }
 }
 
 // 获取文件列表
@@ -1451,7 +1552,15 @@ function loadingEmbeddingModels(){
           </div>
           <!-- === 结束进度显示 === -->
 
-          <div class="document-table-wrapper" v-loading="documentLoading || (isBatchPolling && !batchProgress)">
+          <div class="document-display-options">
+            <el-radio-group v-model="documentDisplayMode" @change="handleDisplayModeChange">
+              <el-radio-button label="table">表格视图</el-radio-button>
+              <el-radio-button label="tree">树形视图</el-radio-button>
+            </el-radio-group>
+          </div>
+
+          <!-- 表格视图 -->
+          <div v-if="documentDisplayMode === 'table'" class="document-table-wrapper" v-loading="documentLoading || (isBatchPolling && !batchProgress)">
             <el-table :data="documentList" style="width: 100%" @sort-change="handleDocSortChange">
               <el-table-column prop="name" label="名称" min-width="180" show-overflow-tooltip sortable="custom" />
               <el-table-column prop="chunk_num" label="分块数" width="100" align="center" />
@@ -1501,6 +1610,17 @@ function loadingEmbeddingModels(){
                 @current-change="handleDocCurrentChange"
               />
             </div>
+          </div>
+          
+          <!-- 树形视图 -->
+          <div v-if="documentDisplayMode === 'tree'" class="document-tree-wrapper">
+            <KnowledgeBaseTree
+              :knowledge-base="currentKnowledgeBase"
+              @document-click="handleDocumentClick"
+              @document-parsed="handleDocumentParsed"
+              @document-removed="handleDocumentRemoved"
+              @refresh="getDocumentList"
+            />
           </div>
         </div>
       </el-dialog>
@@ -1639,6 +1759,16 @@ function loadingEmbeddingModels(){
           </el-button>
         </template>
       </el-dialog>
+
+      <!-- 文件夹选择器 -->
+      <FolderSelector
+        v-model="folderSelectorVisible"
+        title="选择文件夹或文件添加到知识库"
+        :allow-files="true"
+        :allow-folders="true"
+        @confirm="handleFolderSelectorConfirm"
+        @cancel="folderSelectorVisible = false"
+      />
 
       <!-- 文档对话框 -->
       <el-dialog
@@ -1796,10 +1926,20 @@ function loadingEmbeddingModels(){
   justify-content: flex-end;
 }
 
+.document-display-options {
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.document-tree-wrapper {
+  height: 500px;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+}
+
 .kb-info-header {
   display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
   margin-bottom: 20px;
   padding: 16px;
   background-color: #f5f7fa;
