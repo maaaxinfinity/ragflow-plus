@@ -64,10 +64,18 @@ class ConfigLoader:
     
     def get_mysql_config(self) -> Dict[str, any]:
         """获取MySQL配置"""
+        mysql_host = self._config.get('MYSQL_HOST', 'localhost')
+        
+        # 如果是Docker环境中的服务名，转换为localhost用于本地访问
+        if mysql_host == 'mysql':
+            host = 'localhost'
+        else:
+            host = mysql_host
+        
         return {
-            'host': self._config.get('MYSQL_HOST', 'localhost'),
+            'host': host,
             'port': int(self._config.get('MYSQL_PORT', 3306)),
-            'database': self._config.get('MYSQL_DBNAME', 'ragflow'),
+            'database': self._config.get('MYSQL_DBNAME', 'rag_flow'),
             'user': self._config.get('MYSQL_USER', 'root'),
             'password': self._config.get('MYSQL_PASSWORD', '')
         }
@@ -94,7 +102,7 @@ class ConfigLoader:
     def get_elasticsearch_config(self) -> Dict[str, any]:
         """获取ElasticSearch配置"""
         es_host = self._config.get('ES_HOST', 'localhost')
-        es_port = self._config.get('ES_PORT', '9200')
+        es_port = self._config.get('ES_PORT', '1200')
         
         # 如果是Docker环境中的服务名，转换为localhost用于本地访问
         if es_host == 'es01':
