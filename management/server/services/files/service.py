@@ -445,6 +445,36 @@ def batch_delete_files(file_ids):
         raise e
 
 
+def get_all_file_ids():
+    """
+    获取所有文件的ID列表（排除文件夹）
+    
+    Returns:
+        list: 所有文件的ID列表
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # 查询所有非文件夹类型的文件ID
+        query = """
+            SELECT id
+            FROM file
+            WHERE type != 'folder'
+        """
+        cursor.execute(query)
+        files = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        return [file['id'] for file in files]
+        
+    except Exception as e:
+        print(f"获取所有文件ID时发生错误: {str(e)}")
+        raise e
+
+
 def upload_files_to_server(files, parent_id=None, user_id=None):
     """处理文件上传到服务器的核心逻辑"""
     if user_id is None:

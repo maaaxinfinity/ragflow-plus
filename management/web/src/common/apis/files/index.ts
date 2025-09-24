@@ -93,6 +93,17 @@ export function batchDeleteFilesApi(fileIds: string[]) {
 }
 
 /**
+ * 删除全部文件
+ */
+export function deleteAllFilesApi() {
+  return request<{ code: number, message: string }>({
+    url: "/api/v1/files/batch",
+    method: "delete",
+    data: { delete_all: true }
+  })
+}
+
+/**
  * 上传文件
  */
 export function uploadFileApi(formData: FormData) {

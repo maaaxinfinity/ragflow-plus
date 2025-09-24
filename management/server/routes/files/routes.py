@@ -1,7 +1,7 @@
 from io import BytesIO
 
 from flask import current_app, jsonify, request, send_file
-from services.files.service import batch_delete_files, delete_file, download_file_from_minio, get_file_info, get_files_list, handle_chunk_upload, merge_chunks, upload_files_to_server
+from services.files.service import batch_delete_files, delete_file, download_file_from_minio, get_all_file_ids, get_file_info, get_files_list, handle_chunk_upload, merge_chunks, upload_files_to_server
 from services.files.utils import FileType
 
 from .. import files_bp
@@ -111,13 +111,22 @@ def batch_delete_files_route():
     try:
         data = request.json
         file_ids = data.get("ids", [])
+        delete_all = data.get("delete_all", False)
 
-        if not file_ids:
-            return jsonify({"code": 400, "message": "未提供要删除的文件ID"}), 400
+        # 如果指定删除全部文件
+        if delete_all:
+            file_ids = get_all_file_ids()
+            if not file_ids:
+                return jsonify({"code": 0, "message": "没有文件需要删除"})
+        elif not file_ids:
+            return jsonify({"code": 400, "message": "未提供要删除的文件ID，也未指定删除全部文件"}), 400
 
         success_count = batch_delete_files(file_ids)
 
-        return jsonify({"code": 0, "message": f"成功删除 {success_count}/{len(file_ids)} 个文件"})
+        if delete_all:
+            return jsonify({"code": 0, "message": f"成功删除全部 {success_count} 个文件"})
+        else:
+            return jsonify({"code": 0, "message": f"成功删除 {success_count}/{len(file_ids)} 个文件"})
 
     except Exception as e:
         return jsonify({"code": 500, "message": f"批量删除文件失败: {str(e)}"}), 500

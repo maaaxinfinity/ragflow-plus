@@ -20,6 +20,7 @@ export default defineConfig({
   history: {
     type: 'browser',
   },
+  mfsu: false, // 禁用 MFSU 以解决内存问题
   plugins: [
     '@react-dev-inspector/umi4-plugin',
     '@umijs/plugins/dist/tailwindcss',

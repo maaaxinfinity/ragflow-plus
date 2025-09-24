@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import type { FormInstance, UploadRawFile, UploadUserFile } from "element-plus"
-import { batchDeleteFilesApi, deleteFileApi, getFileListApi } from "@@/apis/files"
+import { batchDeleteFilesApi, deleteAllFilesApi, deleteFileApi, getFileListApi } from "@@/apis/files"
 import { UploadStatus, useFileUpload } from "@@/composables/useFileUpload"
 import { usePagination } from "@@/composables/usePagination"
 import { Delete, Download, FolderAdd, Refresh, Search, Upload } from "@element-plus/icons-vue"
@@ -317,6 +317,52 @@ function handleBatchDelete() {
   })
 }
 
+function handleDeleteAll() {
+  ElMessageBox.confirm(
+    `确定要删除 <strong>全部</strong> 文件吗？<br><span style="color: #F56C6C; font-size: 12px;">此操作将删除所有RAG文件，不可恢复！</span>`,
+    "删除全部文件确认",
+    {
+      confirmButtonText: "确定",
+      cancelButtonText: "取消",
+      type: "warning",
+      dangerouslyUseHTMLString: true,
+      center: true,
+      customClass: "delete-confirm-dialog",
+      distinguishCancelAndClose: true,
+      showClose: false,
+      closeOnClickModal: false,
+      closeOnPressEscape: true,
+      roundButton: true,
+      beforeClose: (action, instance, done) => {
+        if (action === "confirm") {
+          instance.confirmButtonLoading = true
+          instance.confirmButtonText = "删除中..."
+
+          loading.value = true
+          deleteAllFilesApi()
+            .then(() => {
+              ElMessage.success("成功删除全部文件")
+              getTableData()
+              done()
+            })
+            .catch((error) => {
+              ElMessage.error(`删除全部文件失败: ${error?.message || "未知错误"}`)
+              done()
+            })
+            .finally(() => {
+              instance.confirmButtonLoading = false
+              loading.value = false
+            })
+        } else {
+          done()
+        }
+      }
+    }
+  ).catch(() => {
+    // User cancelled delete
+  })
+}
+
 function handleSelectionChange(selection: FileData[]) {
   multipleSelection.value = selection
 }
@@ -411,6 +457,14 @@ function closeUploadDialog() {
             @click="handleBatchDelete"
           >
             批量删除
+          </el-button>
+          <el-button
+            type="danger"
+            plain
+            :icon="Delete"
+            @click="handleDeleteAll"
+          >
+            删除全部
           </el-button>
         </div>
       </div>
