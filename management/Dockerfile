@@ -27,7 +27,7 @@ EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
 
 # 后端构建阶段
-FROM python:3.10.16 AS backend
+FROM python:3.10 AS backend
 # 安装 LibreOffice 及字体支持
 RUN apt-get update && \
     apt-get install -y libreoffice fonts-noto-cjk && \
