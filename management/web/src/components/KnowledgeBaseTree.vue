@@ -133,7 +133,7 @@ const defaultExpandedKeys = ref<string[]>([])
 const treeProps = {
   children: 'children',
   label: 'name',
-  isLeaf: (data: DocumentData) => data.type !== 'folder'
+  isLeaf: (data: any) => data.type !== 'folder'
 }
 
 // 计算总文档数
@@ -163,12 +163,12 @@ const loadDocuments = async () => {
   try {
     const response = await getDocumentListApi({
       kb_id: props.knowledgeBase.id,
-      page: 1,
+      currentPage: 1,
       size: 1000, // 获取所有文档
       name: '',
       sort_by: 'create_time',
       sort_order: 'desc'
-    })
+    }) as any
     
     if (response.code === 0) {
       // 构建树形结构
@@ -254,10 +254,7 @@ const handleParseDocument = async (document: DocumentData) => {
   try {
     document.parsing = true
     
-    const response = await runDocumentParseApi({
-      doc_id: document.id,
-      kb_id: props.knowledgeBase!.id
-    })
+    const response = await runDocumentParseApi(document.id) as any
     
     if (response.code === 0) {
       ElMessage.success('文档解析已开始')
@@ -287,10 +284,7 @@ const handleRemoveDocument = async (document: DocumentData) => {
       }
     )
     
-    const response = await deleteDocumentApi({
-      doc_id: document.id,
-      kb_id: props.knowledgeBase!.id
-    })
+    const response = await deleteDocumentApi(document.id) as any
     
     if (response.code === 0) {
       ElMessage.success('文档移除成功')

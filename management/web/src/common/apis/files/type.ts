@@ -56,6 +56,8 @@ export interface FileTreeNode {
   checked?: boolean
   /** 原始文件数据 */
   data?: FileData
+  /** 文件数量（用于文件夹） */
+  fileCount?: number
 }
 
 /**

@@ -22,7 +22,8 @@ import {
   getSystemEmbeddingConfigApi,
   setSystemEmbeddingConfigApi,
   updateKnowledgeBaseApi,
-  loadingEmbeddingModelsApi
+  loadingEmbeddingModelsApi,
+  addDocumentToKnowledgeBaseApi
 } from "@@/apis/kbs/knowledgebase"
 import { getTableDataApi } from "@@/apis/tables"
 import { usePagination } from "@@/composables/usePagination"
@@ -710,8 +711,8 @@ const filePaginationData = reactive({
 const documentDisplayMode = ref<'table' | 'tree'>('table')
 
 // 处理展示模式变化
-function handleDisplayModeChange(mode: 'table' | 'tree') {
-  documentDisplayMode.value = mode
+function handleDisplayModeChange(mode: string) {
+  documentDisplayMode.value = mode as 'table' | 'tree'
 }
 
 // 处理文档点击（树形视图）

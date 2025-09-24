@@ -162,7 +162,7 @@ const selectedItems = ref<SelectedItem[]>([])
 const treeProps = {
   children: 'children',
   label: 'name',
-  isLeaf: (data: FileTreeNode) => data.type !== 'folder'
+  isLeaf: (data: any) => data.type !== 'folder'
 }
 
 // 计算属性

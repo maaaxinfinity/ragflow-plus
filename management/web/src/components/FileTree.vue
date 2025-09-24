@@ -110,7 +110,7 @@ const treeData = ref<FileTreeNode[]>([])
 const treeProps = {
   children: 'children',
   label: 'name',
-  isLeaf: (data: FileTreeNode) => data.type !== 'folder'
+  isLeaf: (data: any) => data.type !== 'folder'
 }
 
 // 创建文件夹

@@ -146,7 +146,7 @@ export const constantRoutes: RouteRecordRaw[] = [
         name: "Agent",
         meta: {
           title: "默认Agent配置",
-          svgIcon: "agent",
+          svgIcon: "user-config",
           affix: false,
           keepAlive: true
         }
