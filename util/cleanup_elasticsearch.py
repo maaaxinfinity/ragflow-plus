@@ -14,20 +14,22 @@ from config_loader import get_elasticsearch_config
 def get_elasticsearch_client(config):
     """创建ElasticSearch客户端"""
     try:
+        # 构建连接URL
+        scheme = 'https' if config['use_ssl'] else 'http'
+        url = f"{scheme}://{config['host']}:{config['port']}"
+        
         if config['username'] and config['password']:
             es = Elasticsearch(
-                [{'host': config['host'], 'port': config['port']}],
-                http_auth=(config['username'], config['password']),
-                use_ssl=config['use_ssl'],
+                [url],
+                basic_auth=(config['username'], config['password']),
                 verify_certs=False,
-                timeout=30
+                request_timeout=30
             )
         else:
             es = Elasticsearch(
-                [{'host': config['host'], 'port': config['port']}],
-                use_ssl=config['use_ssl'],
+                [url],
                 verify_certs=False,
-                timeout=30
+                request_timeout=30
             )
         
         # 测试连接
