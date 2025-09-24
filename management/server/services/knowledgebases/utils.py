@@ -32,7 +32,7 @@ def _update_document_progress(doc_id, progress=None, message=None, status=None, 
             updates.append("chunk_num = %s")
             params.append(chunk_count)
         if process_duration is not None:
-            updates.append("process_duation = %s")
+            updates.append("process_duration = %s")
             params.append(process_duration)
 
         if not updates:
@@ -105,7 +105,7 @@ def _create_task_record(doc_id, chunk_ids_list):
             "from_page",
             "to_page",
             "begin_at",
-            "process_duation",
+            "process_duration",
             "progress",
             "progress_msg",
             "retry_count",

@@ -759,7 +759,7 @@ class Document(DataBaseModel):
         help_text="process message",
         default="")
     process_begin_at = DateTimeField(null=True, index=True)
-    process_duation = FloatField(default=0)
+    process_duration = FloatField(default=0)
     meta_fields = JSONField(null=True, default={})
 
     run = CharField(
@@ -847,7 +847,7 @@ class Task(DataBaseModel):
     task_type = CharField(max_length=32, null=False, default="")
 
     begin_at = DateTimeField(null=True, index=True)
-    process_duation = FloatField(default=0)
+    process_duration = FloatField(default=0)
 
     progress = FloatField(default=0, index=True)
     progress_msg = TextField(

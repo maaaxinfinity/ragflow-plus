@@ -155,7 +155,7 @@ class DocumentService(CommonService):
     @DB.connection_context()
     def increment_chunk_num(cls, doc_id, kb_id, token_num, chunk_num, duation):
         num = (
-            cls.model.update(token_num=cls.model.token_num + token_num, chunk_num=cls.model.chunk_num + chunk_num, process_duation=cls.model.process_duation + duation)
+            cls.model.update(token_num=cls.model.token_num + token_num, chunk_num=cls.model.chunk_num + chunk_num, process_duration=cls.model.process_duration + duation)
             .where(cls.model.id == doc_id)
             .execute()
         )
@@ -168,7 +168,7 @@ class DocumentService(CommonService):
     @DB.connection_context()
     def decrement_chunk_num(cls, doc_id, kb_id, token_num, chunk_num, duation):
         num = (
-            cls.model.update(token_num=cls.model.token_num - token_num, chunk_num=cls.model.chunk_num - chunk_num, process_duation=cls.model.process_duation + duation)
+            cls.model.update(token_num=cls.model.token_num - token_num, chunk_num=cls.model.chunk_num - chunk_num, process_duration=cls.model.process_duration + duation)
             .where(cls.model.id == doc_id)
             .execute()
         )
@@ -373,7 +373,7 @@ class DocumentService(CommonService):
                         status = TaskStatus.DONE.value
 
                 msg = "\n".join(sorted(msg))
-                info = {"process_duation": datetime.timestamp(datetime.now()) - d["process_begin_at"].timestamp(), "run": status}
+                info = {"process_duration": datetime.timestamp(datetime.now()) - d["process_begin_at"].timestamp(), "run": status}
                 if prg != 0:
                     info["progress"] = prg
                 if msg:
