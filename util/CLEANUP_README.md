@@ -2,7 +2,7 @@
 
 ## 概述
 
-本工具集用于清理RAGFlow系统中的所有文档和文件数据，包括MySQL数据库记录、ElasticSearch索引数据和MinIO存储桶。适用于需要重置系统数据或解决存储异常的情况。
+本工具集用于清理RAGFlow系统中的所有文档和文件数据，包括MySQL数据库记录、ElasticSearch索引数据、MinIO存储桶和Redis缓存数据。适用于需要重置系统数据或解决存储异常的情况。
 
 ## 文件说明
 
@@ -11,6 +11,7 @@
 - `run_cleanup.py` - MySQL数据库清理执行脚本
 - `cleanup_elasticsearch.py` - ElasticSearch数据清理脚本
 - `cleanup_minio.py` - MinIO存储桶清理脚本
+- `cleanup_redis.py` - Redis缓存数据清理脚本
 - `check_minio.py` - MinIO连接和存储桶检查脚本
 - `config_loader.py` - 统一配置加载模块
 - `CLEANUP_README.md` - 本使用说明文档
@@ -20,7 +21,7 @@
 ### 1. 安装依赖
 
 ```bash
-pip install mysql-connector-python elasticsearch minio
+pip install mysql-connector-python elasticsearch minio redis
 ```
 
 ### 2. 确认配置
@@ -98,6 +99,9 @@ python cleanup_elasticsearch.py --auto-confirm
 # 仅清理MinIO存储桶
 python cleanup_minio.py --auto-confirm
 
+# 仅清理Redis缓存
+python cleanup_redis.py --auto-confirm
+
 # 检查MinIO连接状态
 python check_minio.py
 ```
@@ -141,6 +145,18 @@ python check_minio.py
 3. 逐个清空存储桶中的对象
 4. 删除空的存储桶
 5. 验证清理结果
+
+### Redis清理
+
+`cleanup_redis.py` 脚本会清理以下Redis数据：
+
+- **临时文件缓存** (`temp_file:*`) - 上传的临时文件数据
+- **文档处理队列** (`doc_*`, `task_*`) - 文档处理相关的队列数据
+- **任务执行器心跳** (`HEARTBEAT:*`) - 任务执行器的心跳信息
+- **文件缓存数据** (`file_*`) - 文件内容缓存
+- **其他应用缓存** - 系统运行时产生的其他缓存数据
+
+清理前会显示Redis连接信息和数据库统计，清理后会显示清理结果。
 
 ## 安全注意事项
 

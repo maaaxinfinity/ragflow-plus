@@ -175,6 +175,16 @@ class ConfigLoader:
         print("ElasticSearch配置:")
         print(f"  主机: {es_config['host']}:{es_config['port']}")
         print(f"  用户: {es_config['username']}")
+        print()
+        
+        # Redis配置
+        redis_config = self.get_redis_config()
+        print("Redis配置:")
+        print(f"  主机: {redis_config['host']}:{redis_config['port']}")
+        if redis_config['password']:
+            print("  密码: 已配置")
+        else:
+            print("  密码: 未配置")
         print("=" * 50)
 
 

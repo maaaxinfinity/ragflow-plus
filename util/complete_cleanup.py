@@ -20,6 +20,7 @@ def print_banner():
     print("1. MySQL数据库中的文档、文件、任务等记录")
     print("2. ElasticSearch中的chunk数据")
     print("3. MinIO存储桶中的所有对象和存储桶")
+    print("4. Redis缓存中的临时文件和队列数据")
     print("="*60)
     print()
 
@@ -28,7 +29,7 @@ def check_dependencies():
     print("检查依赖...")
     
     # 检查Python模块
-    required_modules = ['mysql.connector', 'elasticsearch', 'minio']
+    required_modules = ['mysql.connector', 'elasticsearch', 'minio', 'redis']
     missing_modules = []
     
     for module in required_modules:
@@ -55,6 +56,7 @@ def check_dependencies():
         'run_cleanup.py', 
         'cleanup_elasticsearch.py',
         'cleanup_minio.py',
+        'cleanup_redis.py',
         'config_loader.py'
     ]
     
@@ -143,6 +145,28 @@ def run_minio_cleanup():
         print(f"运行MinIO清理脚本时出错: {e}")
         return False
 
+def run_redis_cleanup():
+    """运行Redis清理"""
+    print("\n步骤 4: 清理Redis缓存")
+    print("-" * 40)
+    
+    try:
+        result = subprocess.run([sys.executable, 'cleanup_redis.py', '--auto-confirm'], 
+                              capture_output=True, text=True, encoding='utf-8')
+        
+        if result.returncode == 0:
+            print("Redis清理成功完成!")
+            print(result.stdout)
+            return True
+        else:
+            print("Redis清理失败!")
+            print("错误输出:", result.stderr)
+            return False
+            
+    except Exception as e:
+        print(f"运行Redis清理脚本时出错: {e}")
+        return False
+
 def interactive_cleanup():
     """交互式清理"""
     print("交互式清理模式")
@@ -151,11 +175,13 @@ def interactive_cleanup():
     print("1. 仅清理MySQL数据库")
     print("2. 仅清理ElasticSearch")
     print("3. 仅清理MinIO存储桶")
-    print("4. 清理数据库和搜索引擎（MySQL + ElasticSearch）")
-    print("5. 清理所有数据（MySQL + ElasticSearch + MinIO）")
-    print("6. 退出")
+    print("4. 仅清理Redis缓存")
+    print("5. 清理数据库和搜索引擎（MySQL + ElasticSearch）")
+    print("6. 清理存储和缓存（MinIO + Redis）")
+    print("7. 清理所有数据（MySQL + ElasticSearch + MinIO + Redis）")
+    print("8. 退出")
     
-    choice = input("\n请选择操作 (1-6): ").strip()
+    choice = input("\n请选择操作 (1-8): ").strip()
     
     if choice == '1':
         return run_mysql_cleanup()
@@ -164,13 +190,22 @@ def interactive_cleanup():
     elif choice == '3':
         return run_minio_cleanup()
     elif choice == '4':
+        return run_redis_cleanup()
+    elif choice == '5':
         mysql_success = run_mysql_cleanup()
         if mysql_success:
             time.sleep(2)  # 等待2秒
             es_success = run_elasticsearch_cleanup()
             return mysql_success and es_success
         return False
-    elif choice == '5':
+    elif choice == '6':
+        minio_success = run_minio_cleanup()
+        if minio_success:
+            time.sleep(2)
+            redis_success = run_redis_cleanup()
+            return minio_success and redis_success
+        return False
+    elif choice == '7':
         mysql_success = run_mysql_cleanup()
         if mysql_success:
             time.sleep(2)
@@ -178,9 +213,12 @@ def interactive_cleanup():
             if es_success:
                 time.sleep(2)
                 minio_success = run_minio_cleanup()
-                return mysql_success and es_success and minio_success
+                if minio_success:
+                    time.sleep(2)
+                    redis_success = run_redis_cleanup()
+                    return mysql_success and es_success and minio_success and redis_success
         return False
-    elif choice == '6':
+    elif choice == '8':
         print("操作已取消")
         return False
     else:
@@ -214,8 +252,16 @@ def automated_cleanup():
     
     # 执行MinIO清理
     minio_success = run_minio_cleanup()
+    if not minio_success:
+        print("MinIO清理失败，停止后续操作")
+        return False
     
-    return mysql_success and es_success and minio_success
+    time.sleep(2)  # 等待2秒
+    
+    # 执行Redis清理
+    redis_success = run_redis_cleanup()
+    
+    return mysql_success and es_success and minio_success and redis_success
 
 def print_cleanup_summary():
     """打印清理总结"""
@@ -226,6 +272,7 @@ def print_cleanup_summary():
     print("✓ MySQL数据库记录清理")
     print("✓ ElasticSearch chunk数据清理")
     print("✓ MinIO存储桶清理")
+    print("✓ Redis缓存数据清理")
     print()
     print("建议的后续操作:")
     print("1. 重启RAGFlow服务以清理内存缓存")
