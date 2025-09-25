@@ -2,8 +2,8 @@
 import type { SequentialBatchTaskProgress } from "@@/apis/kbs/document"
 import type { FormInstance, UploadFile, UploadProps } from "element-plus"
 import DocumentParseProgress from "@/layouts/components/DocumentParseProgress/index.vue"
-import FolderSelector from "@@/components/FolderSelector.vue"
-import KnowledgeBaseTree from "@@/components/KnowledgeBaseTree.vue"
+import FolderSelector from "@/components/FolderSelector.vue"
+import KnowledgeBaseTree from "@/components/KnowledgeBaseTree.vue"
 import {
   deleteDocumentApi,
   getDocumentListApi,
