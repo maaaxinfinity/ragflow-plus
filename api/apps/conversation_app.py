@@ -75,6 +75,88 @@ def ensure_user_tenant_roles(user_id):
     return tenants
 
 
+def get_agent_as_dialog(agent_id):
+    """从agent_config表获取agent并转换为dialog格式"""
+    try:
+        import mysql.connector
+        from api import settings
+
+        # 连接到MySQL数据库
+        db_config = settings.DATABASE.copy()
+        db_name = db_config.pop("name")
+        conn = mysql.connector.connect(**db_config, database=db_name)
+        cursor = conn.cursor(dictionary=True)
+
+        # 查询agent配置
+        query = """
+            SELECT
+                id, name, team_id as tenant_id, description, model_name as llm_id,
+                kb_ids, system_prompt, welcome_message, language, empty_response,
+                similarity_threshold, vector_similarity_weight, top_n,
+                temperature, status, create_time, create_date, update_time, update_date
+            FROM agent_config
+            WHERE id = %s AND status = 'active'
+        """
+        cursor.execute(query, (agent_id,))
+        agent = cursor.fetchone()
+
+        cursor.close()
+        conn.close()
+
+        if not agent:
+            return None
+
+        # 转换为dialog格式
+        kb_ids = []
+        if agent.get('kb_ids'):
+            try:
+                kb_ids = json.loads(agent['kb_ids']) if isinstance(agent['kb_ids'], str) else agent['kb_ids']
+            except:
+                kb_ids = []
+
+        dialog_dict = {
+            'id': f"agent_{agent['id']}",
+            'name': agent['name'],
+            'tenant_id': agent['tenant_id'],
+            'description': agent.get('description', ''),
+            'llm_id': agent.get('llm_id', ''),
+            'kb_ids': kb_ids,
+            'language': agent.get('language', 'Chinese'),
+            'similarity_threshold': agent.get('similarity_threshold', 0.2),
+            'vector_similarity_weight': agent.get('vector_similarity_weight', 0.3),
+            'top_n': agent.get('top_n', 8),
+            'status': '1' if agent.get('status') == 'active' else '0',
+            'create_time': agent.get('create_time', 0),
+            'create_date': agent.get('create_date', ''),
+            'update_time': agent.get('update_time', 0),
+            'update_date': agent.get('update_date', ''),
+            'prompt_config': {
+                'prologue': agent.get('welcome_message', '你好，我是AI助手'),
+                'quote': True,
+                'parameters': [],
+                'system': agent.get('system_prompt', '')
+            },
+            'llm_setting': {
+                'temperature': agent.get('temperature', 0.1)
+            }
+        }
+
+        # 创建一个简单的对象来模拟Dialog模型
+        class AgentDialog:
+            def __init__(self, data):
+                for key, value in data.items():
+                    setattr(self, key, value)
+
+            def to_dict(self):
+                return {key: getattr(self, key) for key in dir(self) if not key.startswith('_') and not callable(getattr(self, key))}
+
+        return AgentDialog(dialog_dict)
+
+    except Exception as e:
+        print(f"获取agent作为dialog失败: {e}")
+        return None
+
+
 def extract_file_content(file_content_bytes, filename, content_type):
     """
     根据文件类型提取文件内容
@@ -195,21 +277,60 @@ def set_conversation():
             return server_error_response(e)
 
     try:
-        # 首先检查Dialog权限
-        tenants = ensure_user_tenant_roles(current_user.id)
-        has_permission = False
-        for tenant in tenants:
-            if DialogService.query(tenant_id=tenant.tenant_id, id=req["dialog_id"]):
-                has_permission = True
-                break
+        dialog_id = req["dialog_id"]
 
-        if not has_permission:
-            return get_json_result(data=False, message="Only owner of dialog authorized for this operation.", code=settings.RetCode.OPERATING_ERROR)
+        # 检查是否是agent类型的dialog
+        if dialog_id.startswith("agent_"):
+            agent_id = dialog_id[6:]  # 移除"agent_"前缀
 
-        e, dia = DialogService.get_by_id(req["dialog_id"])
-        if not e:
-            return get_data_error_result(message="Dialog not found")
-        conv = {"id": conv_id, "dialog_id": req["dialog_id"], "name": req.get("name", "New conversation"), "message": [{"role": "assistant", "content": dia.prompt_config["prologue"]}]}
+            # 获取agent信息并检查权限
+            agent_dialog = get_agent_as_dialog(agent_id)
+            if not agent_dialog:
+                return get_data_error_result(message="Dialog not found")
+
+            # 检查用户是否有权限访问该团队的agent
+            tenants = ensure_user_tenant_roles(current_user.id)
+            has_permission = False
+            for tenant in tenants:
+                if tenant.tenant_id == agent_dialog.tenant_id:
+                    has_permission = True
+                    break
+
+            if not has_permission:
+                return get_json_result(data=False, message="Only owner of dialog authorized for this operation.", code=settings.RetCode.OPERATING_ERROR)
+
+            # 使用agent的配置创建会话
+            conv = {
+                "id": conv_id,
+                "dialog_id": dialog_id,
+                "name": req.get("name", "New conversation"),
+                "message": [{"role": "assistant", "content": agent_dialog.prompt_config.get("prologue", "你好，我是AI助手")}]
+            }
+
+        else:
+            # 原有的dialog逻辑
+            # 首先检查Dialog权限
+            tenants = ensure_user_tenant_roles(current_user.id)
+            has_permission = False
+            for tenant in tenants:
+                if DialogService.query(tenant_id=tenant.tenant_id, id=dialog_id):
+                    has_permission = True
+                    break
+
+            if not has_permission:
+                return get_json_result(data=False, message="Only owner of dialog authorized for this operation.", code=settings.RetCode.OPERATING_ERROR)
+
+            e, dia = DialogService.get_by_id(dialog_id)
+            if not e:
+                return get_data_error_result(message="Dialog not found")
+
+            conv = {
+                "id": conv_id,
+                "dialog_id": dialog_id,
+                "name": req.get("name", "New conversation"),
+                "message": [{"role": "assistant", "content": dia.prompt_config["prologue"]}]
+            }
+
         ConversationService.save(**conv)
         return get_json_result(data=conv)
     except Exception as e:
@@ -307,16 +428,37 @@ def rm():
 def list_convsersation():
     dialog_id = request.args["dialog_id"]
     try:
-        # 使用正确的权限检查逻辑
-        tenants = ensure_user_tenant_roles(current_user.id)
-        has_permission = False
-        for tenant in tenants:
-            if DialogService.query(tenant_id=tenant.tenant_id, id=dialog_id):
-                has_permission = True
-                break
+        # 检查是否是agent类型的dialog
+        if dialog_id.startswith("agent_"):
+            agent_id = dialog_id[6:]  # 移除"agent_"前缀
 
-        if not has_permission:
-            return get_json_result(data=False, message="Only owner of dialog authorized for this operation.", code=settings.RetCode.OPERATING_ERROR)
+            # 获取agent信息并检查权限
+            agent_dialog = get_agent_as_dialog(agent_id)
+            if not agent_dialog:
+                return get_json_result(data=False, message="Dialog not found!", code=settings.RetCode.DATA_ERROR)
+
+            # 检查用户是否有权限访问该团队的agent
+            tenants = ensure_user_tenant_roles(current_user.id)
+            has_permission = False
+            for tenant in tenants:
+                if tenant.tenant_id == agent_dialog.tenant_id:
+                    has_permission = True
+                    break
+
+            if not has_permission:
+                return get_json_result(data=False, message="Only owner of dialog authorized for this operation.", code=settings.RetCode.OPERATING_ERROR)
+
+        else:
+            # 原有的dialog权限检查逻辑
+            tenants = ensure_user_tenant_roles(current_user.id)
+            has_permission = False
+            for tenant in tenants:
+                if DialogService.query(tenant_id=tenant.tenant_id, id=dialog_id):
+                    has_permission = True
+                    break
+
+            if not has_permission:
+                return get_json_result(data=False, message="Only owner of dialog authorized for this operation.", code=settings.RetCode.OPERATING_ERROR)
         convs = ConversationService.query(dialog_id=dialog_id, order_by=ConversationService.model.create_time, reverse=True)
 
         convs = [d.to_dict() for d in convs]
