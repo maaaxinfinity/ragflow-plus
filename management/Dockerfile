@@ -35,7 +35,8 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY server/requirements.txt /app/
-# 安装依赖
+# 安装依赖，设置编译器标志解决datrie兼容性问题
+ENV CFLAGS="-Wno-error=incompatible-pointer-types"
 RUN pip install --no-cache-dir -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 # 复制后端代码
 COPY server /app
