@@ -59,10 +59,12 @@ def create_test_data():
                 }
 
                 with DB.connection_context():
-                    if not UserService.save(**user_dict):
+                    result = UserService.save(**user_dict)
+                    if not result:
                         print("  ❌ 用户创建失败")
                         return False
-
+                    # 确保事务提交
+                    DB.commit()
                     print(f"  ✅ 测试用户创建成功: {test_email} (ID: {user_id})")
 
             except Exception as e:
