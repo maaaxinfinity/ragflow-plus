@@ -55,6 +55,26 @@ except ImportError:
     DOC_AVAILABLE = False
 
 
+def ensure_user_tenant_roles(user_id):
+    """确保用户有租户角色，如果没有则自动创建"""
+    from api.db.services.user_service import UserTenantService
+    tenants = UserTenantService.query(user_id=user_id)
+    if not tenants:
+        from api.utils import get_uuid
+        from api.db import UserTenantRole
+        tenant_role_data = {
+            "id": get_uuid(),
+            "user_id": user_id,
+            "tenant_id": user_id,
+            "role": UserTenantRole.OWNER,
+            "invited_by": user_id,
+            "status": "1"
+        }
+        UserTenantService.save(**tenant_role_data)
+        tenants = UserTenantService.query(user_id=user_id)
+    return tenants
+
+
 def extract_file_content(file_content_bytes, filename, content_type):
     """
     根据文件类型提取文件内容
@@ -176,7 +196,7 @@ def set_conversation():
 
     try:
         # 首先检查Dialog权限
-        tenants = UserTenantService.query(user_id=current_user.id)
+        tenants = ensure_user_tenant_roles(current_user.id)
         has_permission = False
         for tenant in tenants:
             if DialogService.query(tenant_id=tenant.tenant_id, id=req["dialog_id"]):
@@ -288,7 +308,7 @@ def list_convsersation():
     dialog_id = request.args["dialog_id"]
     try:
         # 使用正确的权限检查逻辑
-        tenants = UserTenantService.query(user_id=current_user.id)
+        tenants = ensure_user_tenant_roles(current_user.id)
         has_permission = False
         for tenant in tenants:
             if DialogService.query(tenant_id=tenant.tenant_id, id=dialog_id):

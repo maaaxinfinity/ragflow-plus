@@ -96,7 +96,7 @@ def set_dialog():
             return get_json_result(data=dia)
         else:
             # 检查更新权限
-            tenants = UserTenantService.query(user_id=current_user.id)
+            tenants = ensure_user_tenant_roles(current_user.id)
             has_permission = False
             for tenant in tenants:
                 if DialogService.query(tenant_id=tenant.tenant_id, id=dialog_id):
@@ -128,7 +128,7 @@ def get():
     dialog_id = request.args["dialog_id"]
     try:
         # 首先检查权限
-        tenants = UserTenantService.query(user_id=current_user.id)
+        tenants = ensure_user_tenant_roles(current_user.id)
         has_permission = False
         for tenant in tenants:
             if DialogService.query(tenant_id=tenant.tenant_id, id=dialog_id):
@@ -159,12 +159,32 @@ def get_kb_names(kb_ids):
     return ids, nms
 
 
+def ensure_user_tenant_roles(user_id):
+    """确保用户有租户角色，如果没有则自动创建"""
+    tenants = UserTenantService.query(user_id=user_id)
+    if not tenants:
+        from api.utils import get_uuid
+        from api.db import UserTenantRole
+        tenant_role_data = {
+            "id": get_uuid(),
+            "user_id": user_id,
+            "tenant_id": user_id,
+            "role": UserTenantRole.OWNER,
+            "invited_by": user_id,
+            "status": "1"
+        }
+        UserTenantService.save(**tenant_role_data)
+        tenants = UserTenantService.query(user_id=user_id)
+    return tenants
+
+
 @manager.route("/list", methods=["GET"])  # noqa: F821
 @login_required
 def list_dialogs():
     try:
-        # 获取用户的所有租户角色
-        tenants = UserTenantService.query(user_id=current_user.id)
+        # 确保用户有租户角色
+        tenants = ensure_user_tenant_roles(current_user.id)
+
         all_dialogs = []
 
         # 查询每个租户下的Dialog
@@ -188,7 +208,7 @@ def list_dialogs():
 @validate_request("dialog_ids")
 def rm():
     req = request.json
-    tenants = UserTenantService.query(user_id=current_user.id)
+    tenants = ensure_user_tenant_roles(current_user.id)
     try:
         for id in req["dialog_ids"]:
             for tenant in tenants:
