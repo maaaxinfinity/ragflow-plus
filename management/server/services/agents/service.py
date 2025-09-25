@@ -119,7 +119,7 @@ class AgentService:
                     a.status, a.create_time, a.create_date, a.update_time, a.update_date,
                     t.name as team_name
                 FROM agent_config a
-                LEFT JOIN team t ON a.team_id = t.id
+                LEFT JOIN tenant t ON a.team_id = t.id
                 WHERE a.id = %s
             """
             cursor.execute(query, (agent_id,))
