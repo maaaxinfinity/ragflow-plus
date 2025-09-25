@@ -13,7 +13,7 @@ services:
     environment:
       - API_BASE_URL=/api 
     networks:
-      - docker_ragflow
+      - ragflow
 
   management-backend:
     container_name: ragflowplus-management-backend
@@ -35,8 +35,8 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
-      - docker_ragflow
+      - ragflow
 
 networks:
-  docker_ragflow:
+  ragflow:
     external: true

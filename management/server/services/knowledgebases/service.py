@@ -1529,20 +1529,34 @@ class KnowledgebaseService:
 
     @classmethod
     def get_rag_llm_list(cls, model_type="LLM"):
-        """获取RAG系统中的LLM模型列表"""
+        """获取RAG系统中用户设置的LLM模型列表"""
         try:
             conn = cls._get_db_connection()
             cursor = conn.cursor(dictionary=True)
 
-            # 查询LLM模型列表
-            query = """
+            # 查询tenant_llm表中用户设置的模型列表
+            # 过滤出指定类型且非embedding类型的模型
+            if model_type == "LLM":
+                type_condition = "AND tl.model_type != 'embedding'"
+            else:
+                type_condition = f"AND tl.model_type = '{model_type}'"
+
+            query = f"""
                 SELECT DISTINCT
-                    llm_name, model_type, fid, max_tokens, tags, status
-                FROM llm
-                WHERE model_type = %s AND status = '1'
-                ORDER BY llm_name
+                    tl.llm_name,
+                    tl.model_type,
+                    tl.llm_factory,
+                    tl.api_base,
+                    tl.max_tokens,
+                    tl.tenant_id,
+                    t.name as tenant_name
+                FROM tenant_llm tl
+                LEFT JOIN tenant t ON tl.tenant_id = t.id
+                WHERE tl.llm_name IS NOT NULL
+                {type_condition}
+                ORDER BY tl.llm_name
             """
-            cursor.execute(query, (model_type,))
+            cursor.execute(query)
             models = cursor.fetchall()
 
             # 格式化数据
@@ -1550,11 +1564,12 @@ class KnowledgebaseService:
             for model in models:
                 formatted_models.append({
                     "name": model["llm_name"],
-                    "model_type": model["model_type"],
-                    "fid": model["fid"],
+                    "model_type": model["model_type"] or "LLM",
+                    "llm_factory": model["llm_factory"],
+                    "api_base": model["api_base"],
                     "max_tokens": model["max_tokens"],
-                    "tags": model["tags"],
-                    "status": model["status"]
+                    "tenant_id": model["tenant_id"],
+                    "tenant_name": model["tenant_name"]
                 })
 
             cursor.close()
