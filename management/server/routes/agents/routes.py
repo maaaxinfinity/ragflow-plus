@@ -47,6 +47,8 @@ def create_agent():
     """创建Agent配置"""
     try:
         data = request.json
+        print(f"收到创建Agent请求，数据: {data}")
+
         if not data.get("name"):
             return error_response("Agent名称不能为空", code=400)
         if not data.get("team_id"):
@@ -55,6 +57,9 @@ def create_agent():
         agent = AgentService.create_agent(**data)
         return success_response(agent, "创建Agent成功", code=201)
     except Exception as e:
+        print(f"创建Agent失败: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return error_response(str(e))
 
 
