@@ -81,8 +81,8 @@ def get_files_list(current_page, page_size, name_filter="", sort_by="create_time
             where_clause += " AND f.parent_id = %s"
             params.append(parent_id)
         else:
-            # 如果没有指定parent_id，查询根目录文件（parent_id为空或等于自身ID的根文件夹）
-            where_clause += " AND (f.parent_id IS NULL OR f.parent_id = '' OR f.parent_id = f.id)"
+            # 如果没有指定parent_id，查询根目录下的文件
+            where_clause += " AND f.parent_id = 'root'"
 
         if name_filter:
             where_clause += " AND f.name LIKE %s"
@@ -146,8 +146,8 @@ def get_file_tree(parent_id=None):
             where_clause = "WHERE parent_id = %s"
             params = [parent_id]
         else:
-            # 查询根目录文件（parent_id为空或等于自身ID的根文件夹）
-            where_clause = "WHERE (parent_id IS NULL OR parent_id = '' OR parent_id = id)"
+            # 查询根目录文件
+            where_clause = "WHERE parent_id = 'root'"
             params = []
 
         # 查询文件和文件夹
@@ -646,34 +646,10 @@ def upload_files_to_server(files, parent_id=None, user_id=None):
             print(f"查询最早用户ID失败: {str(e)}")
             user_id = "system"
 
-    # 如果没有指定parent_id，则获取file表中的第一个记录作为parent_id
+    # 如果没有指定parent_id，则创建一个根目录用的UUID
     if parent_id is None:
-        try:
-            conn = get_db_connection()
-            cursor = conn.cursor(dictionary=True)
-
-            # 查询file表中的第一个记录
-            query_first_file = """
-            SELECT id FROM file 
-            LIMIT 1
-            """
-            cursor.execute(query_first_file)
-            first_file = cursor.fetchone()
-
-            if first_file:
-                parent_id = first_file["id"]
-                print(f"使用file表中的第一个记录ID作为parent_id: {parent_id}")
-            else:
-                # 如果没有找到记录，创建一个新的ID
-                parent_id = get_uuid()
-                print(f"file表中没有记录，创建新的parent_id: {parent_id}")
-
-            cursor.close()
-            conn.close()
-        except Exception as e:
-            print(f"查询file表第一个记录失败: {str(e)}")
-            parent_id = get_uuid()  # 如果无法获取，生成一个新的ID
-            print(f"生成新的parent_id: {parent_id}")
+        parent_id = "root"  # 使用固定的根目录标识
+        print(f"使用根目录作为parent_id: {parent_id}")
 
     results = []
 
