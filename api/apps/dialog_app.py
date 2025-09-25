@@ -208,33 +208,27 @@ def ensure_user_tenant_roles(user_id):
 def get_agent_as_dialog(agent_id):
     """从agent_config表获取agent并转换为dialog格式"""
     try:
-        import mysql.connector
-        from api import settings
+        from api.db.db_models import DB
 
-        # 连接到MySQL数据库
-        db_config = settings.DATABASE.copy()
-        db_name = db_config.pop("name")
-        conn = mysql.connector.connect(**db_config, database=db_name)
-        cursor = conn.cursor(dictionary=True)
+        # 使用RAGFlow的数据库连接方式
+        with DB.connection_context():
+            cursor = DB.execute_sql("""
+                SELECT
+                    id, name, team_id as tenant_id, description, model_name as llm_id,
+                    kb_ids, system_prompt, welcome_message, language, empty_response,
+                    similarity_threshold, vector_similarity_weight, top_n,
+                    temperature, status, create_time, create_date, update_time, update_date
+                FROM agent_config
+                WHERE id = %s AND status = 'active'
+            """, (agent_id,))
 
-        # 查询agent配置
-        query = """
-            SELECT
-                id, name, team_id as tenant_id, description, model_name as llm_id,
-                kb_ids, system_prompt, welcome_message, language, empty_response,
-                similarity_threshold, vector_similarity_weight, top_n,
-                temperature, status, create_time, create_date, update_time, update_date
-            FROM agent_config
-            WHERE id = %s AND status = 'active'
-        """
-        cursor.execute(query, (agent_id,))
-        agent = cursor.fetchone()
+            row = cursor.fetchone()
+            if not row:
+                return None
 
-        cursor.close()
-        conn.close()
-
-        if not agent:
-            return None
+            # 转换查询结果为字典
+            columns = [desc[0] for desc in cursor.description]
+            agent = dict(zip(columns, row))
 
         # 转换为dialog格式
         import json
