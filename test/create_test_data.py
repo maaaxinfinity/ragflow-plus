@@ -16,9 +16,9 @@ def create_test_data():
     try:
         print("=== 创建测试数据 ===")
 
-        from api.db import UserService, DialogService, TenantService
+        from api.db.services.user_service import UserService
+        from api.db.services.dialog_service import DialogService
         from api.db.db_models import DB
-        from api.db.services.user_service import UserService as US
         from api.utils import get_uuid
         import hashlib
 

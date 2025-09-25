@@ -17,9 +17,10 @@ def debug_dialog_permissions():
         print("=== 调试 Dialog 权限问题 ===")
 
         # 设置数据库连接
-        from api.db import UserService, DialogService, ConversationService, TenantService
+        from api.db.services.user_service import UserService
+        from api.db.services.dialog_service import DialogService
+        from api.db.services.conversation_service import ConversationService
         from api.db.db_models import DB
-        from api.settings import database_logger
 
         # 初始化数据库连接
         if not DB.is_connected():
@@ -40,17 +41,8 @@ def debug_dialog_permissions():
         except Exception as e:
             print(f"  查询用户失败: {e}")
 
-        # 查看所有租户
-        print("\n3. 租户列表:")
-        try:
-            tenants = TenantService.query()
-            if tenants:
-                for tenant in tenants:
-                    print(f"  租户ID: {tenant.id}, 名称: {tenant.name}")
-            else:
-                print("  没有找到任何租户")
-        except Exception as e:
-            print(f"  查询租户失败: {e}")
+        # 查看所有租户（暂时跳过，专注于用户和Dialog）
+        print("\n3. 租户列表: (跳过，专注于核心问题)")
 
         # 查看所有Dialog
         print("\n4. Dialog列表:")
