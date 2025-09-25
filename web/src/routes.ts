@@ -135,6 +135,10 @@ const routes = [
         path: '/search',
         component: '@/pages/search',
       },
+      {
+        path: '/test-agent',
+        component: '@/pages/test-agent',
+      },
     ],
   },
   {

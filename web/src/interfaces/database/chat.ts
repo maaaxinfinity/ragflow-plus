@@ -51,6 +51,9 @@ export interface IDialog {
   update_time: number;
   vector_similarity_weight: number;
   similarity_threshold: number;
+  // 可选字段，用于标记来源
+  source?: string;
+  team_id?: string;
 }
 
 export interface IConversation {

@@ -99,20 +99,73 @@ export const useFetchNextDialogList = () => {
     refetchOnWindowFocus: false,
     queryFn: async (...params) => {
       console.log('🚀 ~ queryFn: ~ params:', params);
-      const { data } = await chatService.listDialog();
 
-      if (data.code === 0) {
-        const list: IDialog[] = data.data;
-        if (list.length > 0) {
-          if (list.every((x) => x.id !== dialogId)) {
-            handleClickDialog(data.data[0].id);
+      // 获取原有的 dialogs
+      const { data: dialogData } = await chatService.listDialog();
+
+      // 获取管理系统的 agents
+      let managementAgents: any[] = [];
+      try {
+        const agentResponse = await fetch('/api/v1/agents');
+        if (agentResponse.ok) {
+          const agentResult = await agentResponse.json();
+          managementAgents = agentResult.data?.list || [];
+        }
+      } catch (error) {
+        console.warn('Failed to fetch management agents:', error);
+      }
+
+      // 转换 agents 为 dialog 格式
+      const convertedAgents: IDialog[] = managementAgents.map((agent: any) => ({
+        id: `agent_${agent.id}`, // 添加前缀避免ID冲突
+        dialog_id: `agent_${agent.id}`,
+        name: agent.name,
+        description: agent.description || '',
+        icon: '', // 可以设置默认图标
+        kb_ids: agent.kb_ids || [],
+        kb_names: agent.kb_names || [],
+        language: 'zh',
+        llm_id: agent.model_name || '',
+        llm_setting: {},
+        llm_setting_type: 'Precise',
+        prompt_config: {
+          system: agent.system_prompt || '',
+          prologue: agent.welcome_message || '',
+          empty_response: '抱歉，我无法回答您的问题。',
+          parameters: [],
+        },
+        prompt_type: 'simple',
+        status: 'active',
+        tenant_id: '',
+        create_date: agent.create_date || '',
+        create_time: agent.create_time || Date.now(),
+        update_date: agent.update_date || '',
+        update_time: agent.update_time || Date.now(),
+        vector_similarity_weight: 0.3,
+        similarity_threshold: 0.2,
+        // 标记为来自管理系统
+        source: 'management',
+        team_id: agent.team_id,
+      }));
+
+      let allDialogs: IDialog[] = [];
+
+      if (dialogData.code === 0) {
+        const originalDialogs: IDialog[] = dialogData.data || [];
+        allDialogs = [...originalDialogs, ...convertedAgents];
+
+        if (allDialogs.length > 0) {
+          if (allDialogs.every((x) => x.id !== dialogId)) {
+            handleClickDialog(allDialogs[0].id);
           }
         } else {
           history.push('/chat');
         }
+      } else {
+        allDialogs = convertedAgents;
       }
 
-      return data?.data ?? [];
+      return allDialogs;
     },
   });
 
