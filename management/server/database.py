@@ -27,13 +27,13 @@ def is_running_in_docker():
 
 # 根据运行环境选择合适的主机地址和端口
 if is_running_in_docker():
-    MYSQL_HOST = "mysql"
+    MYSQL_HOST = "ragflow-mysql"
     MYSQL_PORT = 3306
-    MINIO_HOST = "minio"
+    MINIO_HOST = "ragflow-minio"
     MINIO_PORT = 9000
-    ES_HOST = "es01"
+    ES_HOST = "ragflow-es-01"
     ES_PORT = 9200
-    REDIS_HOST = "redis"
+    REDIS_HOST = "ragflow-redis"
     REDIS_PORT = 6379
 else:
     MYSQL_HOST = "localhost"

@@ -120,50 +120,200 @@
     <el-dialog
       v-model="dialogVisible"
       :title="dialogTitle"
-      width="60%"
+      width="80%"
       :close-on-click-modal="false"
     >
-      <el-form
-        ref="formRef"
-        :model="formData"
-        :rules="formRules"
-        label-width="120px"
-      >
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="Agent名称" prop="name">
-              <el-input v-model="formData.name" placeholder="请输入Agent名称" />
+      <el-tabs v-model="activeTab" type="border-card">
+        <!-- 助理设置 -->
+        <el-tab-pane label="助理设置" name="assistant">
+          <el-form
+            ref="formRef"
+            :model="formData"
+            :rules="formRules"
+            label-width="120px"
+          >
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="Agent名称" prop="name">
+                  <el-input v-model="formData.name" placeholder="请输入Agent名称" />
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="所属团队" prop="team_id">
+                  <el-select
+                    v-model="formData.team_id"
+                    placeholder="选择团队"
+                    style="width: 100%"
+                  >
+                    <el-option
+                      v-for="team in teamList"
+                      :key="team.id"
+                      :label="team.name"
+                      :value="team.id"
+                    />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+            </el-row>
+
+            <el-form-item label="描述" prop="description">
+              <el-input
+                v-model="formData.description"
+                type="textarea"
+                :rows="3"
+                placeholder="请输入Agent描述"
+              />
             </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="所属团队" prop="team_id">
+
+            <el-form-item label="语言" prop="language">
+              <el-select v-model="formData.language" style="width: 100%">
+                <el-option label="中文" value="Chinese" />
+                <el-option label="English" value="English" />
+              </el-select>
+            </el-form-item>
+
+            <el-form-item label="关联知识库">
               <el-select
-                v-model="formData.team_id"
-                placeholder="选择团队"
+                v-model="formData.kb_ids"
+                multiple
+                placeholder="选择关联的知识库"
                 style="width: 100%"
               >
                 <el-option
-                  v-for="team in teamList"
-                  :key="team.id"
-                  :label="team.name"
-                  :value="team.id"
+                  v-for="kb in knowledgeBaseList"
+                  :key="kb.id"
+                  :label="kb.name"
+                  :value="kb.id"
                 />
               </el-select>
             </el-form-item>
-          </el-col>
-        </el-row>
 
-        <el-form-item label="描述" prop="description">
-          <el-input
-            v-model="formData.description"
-            type="textarea"
-            :rows="3"
-            placeholder="请输入Agent描述"
-          />
-        </el-form-item>
+            <el-form-item label="空回复内容">
+              <el-input
+                v-model="formData.empty_response"
+                type="textarea"
+                :rows="2"
+                placeholder="当无法从知识库中找到相关信息时的回复"
+              />
+            </el-form-item>
 
-        <el-row :gutter="20">
-          <el-col :span="12">
+            <el-form-item label="设为默认">
+              <el-switch
+                v-model="formData.is_default"
+                active-text="是"
+                inactive-text="否"
+              />
+              <div class="form-tip">
+                设为默认后，该团队成员在对话页面将优先使用此Agent
+              </div>
+            </el-form-item>
+
+            <el-form-item label="状态" prop="status">
+              <el-select v-model="formData.status" style="width: 100%">
+                <el-option label="启用" value="active" />
+                <el-option label="禁用" value="inactive" />
+              </el-select>
+            </el-form-item>
+          </el-form>
+        </el-tab-pane>
+
+        <!-- 提示引擎 -->
+        <el-tab-pane label="提示引擎" name="prompt">
+          <el-form
+            ref="promptFormRef"
+            :model="formData"
+            label-width="120px"
+          >
+            <el-form-item label="系统提示词" prop="system_prompt">
+              <el-input
+                v-model="formData.system_prompt"
+                type="textarea"
+                :rows="6"
+                placeholder="请输入系统提示词，用于指导Agent的行为和回答方式"
+              />
+            </el-form-item>
+
+            <el-form-item label="欢迎语" prop="welcome_message">
+              <el-input
+                v-model="formData.welcome_message"
+                type="textarea"
+                :rows="3"
+                placeholder="请输入欢迎语，用户开始对话时显示"
+              />
+            </el-form-item>
+
+            <el-divider>检索设置</el-divider>
+
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="相似度阈值">
+                  <el-slider
+                    v-model="formData.similarity_threshold"
+                    :min="0"
+                    :max="1"
+                    :step="0.1"
+                    show-input
+                    style="width: 100%"
+                  />
+                  <div class="form-tip">
+                    文档片段与问题的最低相似度阈值
+                  </div>
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="向量权重">
+                  <el-slider
+                    v-model="formData.vector_similarity_weight"
+                    :min="0"
+                    :max="1"
+                    :step="0.1"
+                    show-input
+                    style="width: 100%"
+                  />
+                  <div class="form-tip">
+                    向量检索与关键词检索的权重比例
+                  </div>
+                </el-form-item>
+              </el-col>
+            </el-row>
+
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="检索数量">
+                  <el-input-number
+                    v-model="formData.top_n"
+                    :min="1"
+                    :max="50"
+                    style="width: 100%"
+                  />
+                  <div class="form-tip">
+                    从知识库中检索的文档片段数量
+                  </div>
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="启用重排">
+                  <el-switch
+                    v-model="formData.rerank_enabled"
+                    active-text="是"
+                    inactive-text="否"
+                  />
+                  <div class="form-tip">
+                    对检索结果进行重新排序以提升准确性
+                  </div>
+                </el-form-item>
+              </el-col>
+            </el-row>
+          </el-form>
+        </el-tab-pane>
+
+        <!-- 模型设置 -->
+        <el-tab-pane label="模型设置" name="model">
+          <el-form
+            ref="modelFormRef"
+            :model="formData"
+            label-width="120px"
+          >
             <el-form-item label="使用模型" prop="model_name">
               <el-select
                 v-model="formData.model_name"
@@ -178,62 +328,105 @@
                 />
               </el-select>
             </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="状态" prop="status">
-              <el-select v-model="formData.status" style="width: 100%">
-                <el-option label="启用" value="active" />
-                <el-option label="禁用" value="inactive" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
 
-        <el-form-item label="关联知识库">
-          <el-select
-            v-model="formData.kb_ids"
-            multiple
-            placeholder="选择关联的知识库"
-            style="width: 100%"
-          >
-            <el-option
-              v-for="kb in knowledgeBaseList"
-              :key="kb.id"
-              :label="kb.name"
-              :value="kb.id"
-            />
-          </el-select>
-        </el-form-item>
+            <el-divider>模型参数</el-divider>
 
-        <el-form-item label="系统提示词" prop="system_prompt">
-          <el-input
-            v-model="formData.system_prompt"
-            type="textarea"
-            :rows="4"
-            placeholder="请输入系统提示词，用于指导Agent的行为"
-          />
-        </el-form-item>
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="温度">
+                  <el-slider
+                    v-model="formData.temperature"
+                    :min="0"
+                    :max="2"
+                    :step="0.1"
+                    show-input
+                    style="width: 100%"
+                  />
+                  <div class="form-tip">
+                    控制回答的创造性，数值越高回答越有创意
+                  </div>
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="最大Token">
+                  <el-input-number
+                    v-model="formData.max_tokens"
+                    :min="1"
+                    :max="8192"
+                    style="width: 100%"
+                  />
+                  <div class="form-tip">
+                    模型生成回答的最大长度
+                  </div>
+                </el-form-item>
+              </el-col>
+            </el-row>
 
-        <el-form-item label="欢迎语" prop="welcome_message">
-          <el-input
-            v-model="formData.welcome_message"
-            type="textarea"
-            :rows="2"
-            placeholder="请输入欢迎语，用户开始对话时显示"
-          />
-        </el-form-item>
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="Top P">
+                  <el-slider
+                    v-model="formData.top_p"
+                    :min="0"
+                    :max="1"
+                    :step="0.1"
+                    show-input
+                    style="width: 100%"
+                  />
+                  <div class="form-tip">
+                    核采样参数，控制生成词汇的多样性
+                  </div>
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="频率惩罚">
+                  <el-slider
+                    v-model="formData.frequency_penalty"
+                    :min="0"
+                    :max="2"
+                    :step="0.1"
+                    show-input
+                    style="width: 100%"
+                  />
+                  <div class="form-tip">
+                    减少重复内容的生成
+                  </div>
+                </el-form-item>
+              </el-col>
+            </el-row>
 
-        <el-form-item label="设为默认">
-          <el-switch
-            v-model="formData.is_default"
-            active-text="是"
-            inactive-text="否"
-          />
-          <div class="form-tip">
-            设为默认后，该团队成员在对话页面将优先使用此Agent
-          </div>
-        </el-form-item>
-      </el-form>
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="存在惩罚">
+                  <el-slider
+                    v-model="formData.presence_penalty"
+                    :min="0"
+                    :max="2"
+                    :step="0.1"
+                    show-input
+                    style="width: 100%"
+                  />
+                  <div class="form-tip">
+                    鼓励模型谈论新主题
+                  </div>
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="流式响应">
+                  <el-switch
+                    v-model="formData.stream"
+                    active-text="是"
+                    inactive-text="否"
+                  />
+                  <div class="form-tip">
+                    启用后回答将实时显示
+                  </div>
+                </el-form-item>
+              </el-col>
+            </el-row>
+          </el-form>
+        </el-tab-pane>
+      </el-tabs>
 
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
