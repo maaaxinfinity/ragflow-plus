@@ -1484,3 +1484,120 @@ class KnowledgebaseService:
                     cursor.close()
             if conn and conn.is_connected():
                 conn.close()
+
+    @classmethod
+    def get_rag_tenant_list(cls):
+        """获取RAG系统中的租户(团队)列表"""
+        try:
+            conn = cls._get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+
+            # 查询租户列表
+            query = """
+                SELECT
+                    t.id, t.name, t.create_date, t.update_date, t.status,
+                    u.nickname as owner_name
+                FROM tenant t
+                LEFT JOIN user_tenant ut ON t.id = ut.tenant_id AND ut.role = 'owner'
+                LEFT JOIN user u ON ut.user_id = u.id
+                WHERE t.status = '1'
+                ORDER BY t.create_date DESC
+            """
+            cursor.execute(query)
+            tenants = cursor.fetchall()
+
+            # 格式化数据
+            formatted_tenants = []
+            for tenant in tenants:
+                formatted_tenants.append({
+                    "id": tenant["id"],
+                    "name": tenant["name"] or f"{tenant['owner_name'] or '未知用户'}的团队",
+                    "owner_name": tenant["owner_name"] or "未指定",
+                    "create_date": tenant["create_date"].strftime("%Y-%m-%d %H:%M:%S") if tenant["create_date"] else "",
+                    "update_date": tenant["update_date"].strftime("%Y-%m-%d %H:%M:%S") if tenant["update_date"] else "",
+                    "status": tenant["status"]
+                })
+
+            cursor.close()
+            conn.close()
+
+            return formatted_tenants
+
+        except Exception as e:
+            print(f"获取RAG租户列表失败: {str(e)}")
+            raise e
+
+    @classmethod
+    def get_rag_llm_list(cls, model_type="LLM"):
+        """获取RAG系统中的LLM模型列表"""
+        try:
+            conn = cls._get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+
+            # 查询LLM模型列表
+            query = """
+                SELECT DISTINCT
+                    llm_name, model_type, fid, max_tokens, tags, status
+                FROM llm
+                WHERE model_type = %s AND status = '1'
+                ORDER BY llm_name
+            """
+            cursor.execute(query, (model_type,))
+            models = cursor.fetchall()
+
+            # 格式化数据
+            formatted_models = []
+            for model in models:
+                formatted_models.append({
+                    "name": model["llm_name"],
+                    "model_type": model["model_type"],
+                    "fid": model["fid"],
+                    "max_tokens": model["max_tokens"],
+                    "tags": model["tags"],
+                    "status": model["status"]
+                })
+
+            cursor.close()
+            conn.close()
+
+            return formatted_models
+
+        except Exception as e:
+            print(f"获取RAG LLM模型列表失败: {str(e)}")
+            raise e
+
+    @classmethod
+    def get_rag_knowledgebase_simple_list(cls):
+        """获取RAG系统中的知识库简单列表(仅id和name)"""
+        try:
+            conn = cls._get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+
+            # 查询知识库列表
+            query = """
+                SELECT
+                    id, name, description, tenant_id
+                FROM knowledgebase
+                ORDER BY create_date DESC
+            """
+            cursor.execute(query)
+            knowledgebases = cursor.fetchall()
+
+            # 格式化数据
+            formatted_kbs = []
+            for kb in knowledgebases:
+                formatted_kbs.append({
+                    "id": kb["id"],
+                    "name": kb["name"],
+                    "description": kb["description"] or "",
+                    "tenant_id": kb["tenant_id"]
+                })
+
+            cursor.close()
+            conn.close()
+
+            return formatted_kbs
+
+        except Exception as e:
+            print(f"获取RAG知识库简单列表失败: {str(e)}")
+            raise e

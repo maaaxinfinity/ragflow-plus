@@ -305,3 +305,35 @@ def get_knowledgebase_embedding_config():
         return success_response(data=result)
     except Exception as e:
         return error_response(f"获取知识库嵌入模型配置失败: {str(e)}", code=500)
+
+
+# 新增的RAG数据API端点
+@knowledgebase_bp.route('/rag/tenants', methods=['GET'])
+def get_rag_tenants():
+    """获取RAG系统中的租户(团队)列表"""
+    try:
+        result = KnowledgebaseService.get_rag_tenant_list()
+        return success_response(data=result)
+    except Exception as e:
+        return error_response(f"获取RAG租户列表失败: {str(e)}", code=500)
+
+
+@knowledgebase_bp.route('/rag/llms', methods=['GET'])
+def get_rag_llms():
+    """获取RAG系统中的LLM模型列表"""
+    try:
+        model_type = request.args.get('model_type', 'LLM')
+        result = KnowledgebaseService.get_rag_llm_list(model_type=model_type)
+        return success_response(data=result)
+    except Exception as e:
+        return error_response(f"获取RAG LLM模型列表失败: {str(e)}", code=500)
+
+
+@knowledgebase_bp.route('/rag/simple', methods=['GET'])
+def get_rag_knowledgebases_simple():
+    """获取RAG系统中的知识库简单列表"""
+    try:
+        result = KnowledgebaseService.get_rag_knowledgebase_simple_list()
+        return success_response(data=result)
+    except Exception as e:
+        return error_response(f"获取RAG知识库简单列表失败: {str(e)}", code=500)

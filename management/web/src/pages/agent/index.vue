@@ -269,25 +269,13 @@ const searchForm = reactive({
 const tableData = ref<any[]>([])
 
 // 团队列表
-const teamList = ref([
-  { id: '1', name: '开发团队' },
-  { id: '2', name: '产品团队' },
-  { id: '3', name: '运营团队' }
-])
+const teamList = ref([])
 
 // 模型列表
-const modelList = ref([
-  { name: 'gpt-3.5-turbo', description: 'GPT-3.5 Turbo' },
-  { name: 'gpt-4', description: 'GPT-4' },
-  { name: 'claude-3', description: 'Claude-3' }
-])
+const modelList = ref([])
 
 // 知识库列表
-const knowledgeBaseList = ref([
-  { id: '1', name: '产品文档' },
-  { id: '2', name: '技术文档' },
-  { id: '3', name: '用户手册' }
-])
+const knowledgeBaseList = ref([])
 
 // 对话框相关
 const dialogVisible = ref(false)
@@ -329,51 +317,76 @@ const dialogTitle = computed(() => {
   return formData.id ? '编辑 Agent 配置' : '新建 Agent 配置'
 })
 
+// 获取团队列表
+const getTeamList = async () => {
+  try {
+    const response = await fetch('/api/v1/knowledgebases/rag/tenants')
+    if (response.ok) {
+      const result = await response.json()
+      if (result.code === 0) {
+        teamList.value = result.data || []
+      }
+    }
+  } catch (error) {
+    console.error('获取团队列表失败:', error)
+  }
+}
+
+// 获取模型列表
+const getModelList = async () => {
+  try {
+    const response = await fetch('/api/v1/knowledgebases/rag/llms?model_type=LLM')
+    if (response.ok) {
+      const result = await response.json()
+      if (result.code === 0) {
+        modelList.value = result.data || []
+      }
+    }
+  } catch (error) {
+    console.error('获取模型列表失败:', error)
+  }
+}
+
+// 获取知识库列表
+const getKnowledgeBaseList = async () => {
+  try {
+    const response = await fetch('/api/v1/knowledgebases/rag/simple')
+    if (response.ok) {
+      const result = await response.json()
+      if (result.code === 0) {
+        knowledgeBaseList.value = result.data || []
+      }
+    }
+  } catch (error) {
+    console.error('获取知识库列表失败:', error)
+  }
+}
+
 // 获取表格数据
 const getTableData = async () => {
   loading.value = true
   try {
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    // 模拟数据
-    tableData.value = [
-      {
-        id: '1',
-        name: '客服助手',
-        team_id: '1',
-        team_name: '开发团队',
-        description: '专业的客服对话助手',
-        model_name: 'gpt-3.5-turbo',
-        kb_ids: ['1', '3'],
-        kb_names: ['产品文档', '用户手册'],
-        system_prompt: '你是一个专业的客服助手...',
-        welcome_message: '您好！我是客服助手，有什么可以帮助您的吗？',
-        is_default: true,
-        status: 'active',
-        create_date: '2024-01-15 10:30:00',
-        updating: false
-      },
-      {
-        id: '2',
-        name: '技术顾问',
-        team_id: '1',
-        team_name: '开发团队',
-        description: '技术问题解答助手',
-        model_name: 'gpt-4',
-        kb_ids: ['2'],
-        kb_names: ['技术文档'],
-        system_prompt: '你是一个技术专家...',
-        welcome_message: '我是技术顾问，可以帮您解答技术问题。',
-        is_default: false,
-        status: 'active',
-        create_date: '2024-01-16 14:20:00',
-        updating: false
+    const params = new URLSearchParams({
+      currentPage: paginationData.currentPage.toString(),
+      size: paginationData.pageSize.toString(),
+      team_id: searchForm.team_id,
+      name: searchForm.name
+    })
+
+    const response = await fetch(`/api/v1/agents?${params}`)
+    if (response.ok) {
+      const result = await response.json()
+      if (result.code === 0) {
+        tableData.value = result.data?.list || []
+        paginationData.total = result.data?.total || 0
+      } else {
+        ElMessage.error(result.message || '获取数据失败')
       }
-    ]
-    
-    paginationData.total = tableData.value.length
+    } else {
+      ElMessage.error('获取数据失败')
+    }
   } catch (error) {
+    console.error('获取Agent列表失败:', error)
     ElMessage.error('获取数据失败')
   } finally {
     loading.value = false
@@ -474,20 +487,49 @@ const handleDefaultChange = async (row: any) => {
 // 提交表单
 const handleSubmit = async () => {
   if (!formRef.value) return
-  
+
   try {
     await formRef.value.validate()
-    
+
     submitLoading.value = true
-    
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    ElMessage.success(formData.id ? '更新成功' : '创建成功')
-    dialogVisible.value = false
-    getTableData()
+
+    // 调用真实API
+    const method = formData.id ? 'PUT' : 'POST'
+    const url = formData.id ? `/api/v1/agents/${formData.id}` : '/api/v1/agents'
+
+    const response = await fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        name: formData.name,
+        team_id: formData.team_id,
+        description: formData.description,
+        model_name: formData.model_name,
+        kb_ids: formData.kb_ids,
+        system_prompt: formData.system_prompt,
+        welcome_message: formData.welcome_message,
+        is_default: formData.is_default,
+        status: formData.status
+      })
+    })
+
+    if (response.ok) {
+      const result = await response.json()
+      if (result.code === 0) {
+        ElMessage.success(formData.id ? '更新成功' : '创建成功')
+        dialogVisible.value = false
+        getTableData()
+      } else {
+        ElMessage.error(result.message || '操作失败')
+      }
+    } else {
+      ElMessage.error('操作失败')
+    }
   } catch (error) {
-    console.error('表单验证失败:', error)
+    console.error('提交失败:', error)
+    ElMessage.error('操作失败')
   } finally {
     submitLoading.value = false
   }
@@ -512,6 +554,9 @@ const resetForm = () => {
 
 // 初始化
 onMounted(() => {
+  getTeamList()
+  getModelList()
+  getKnowledgeBaseList()
   getTableData()
 })
 </script>
