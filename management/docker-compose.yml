@@ -13,7 +13,7 @@ services:
     environment:
       - API_BASE_URL=/api 
     networks:
-      - management_network
+      - ragflow_ragflow
 
   management-backend:
     container_name: ragflowplus-management-backend
@@ -24,17 +24,19 @@ services:
       target: backend
     ports:
       - "5000:5000"
+    volumes:
+      - ../docker/ragflow-plus-logs:/app/logs
     environment:
       - FLASK_ENV=development
-      - CORS_ALLOWED_ORIGINS=http://frontend
+      - CORS_ALLOWED_ORIGINS=http://ragflowplus-management-frontend
       - MANAGEMENT_ADMIN_USERNAME=${MANAGEMENT_ADMIN_USERNAME:-admin}
       - MANAGEMENT_ADMIN_PASSWORD=${MANAGEMENT_ADMIN_PASSWORD:-12345678}
       - MANAGEMENT_JWT_SECRET=${MANAGEMENT_JWT_SECRET:-12345678}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
-      - management_network
+      - ragflow_ragflow
 
 networks:
-  management_network:
-    driver: bridge
+  ragflow_ragflow:
+    external: true

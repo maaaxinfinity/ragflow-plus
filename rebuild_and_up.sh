@@ -65,33 +65,33 @@ check_docker() {
 # 停止现有服务
 stop_services() {
     log_info "停止现有服务..."
-    
-    # 停止主服务
-    cd docker
-    if docker-compose ps -q 2>/dev/null | grep -q .; then
-        log_info "停止主 RAGFlow 服务..."
-        docker-compose down --remove-orphans
-    fi
-    
-    # 停止管理系统服务
-    cd ../management
+
+    # 停止管理系统服务（先停止避免依赖问题）
+    cd management
     if docker-compose ps -q 2>/dev/null | grep -q .; then
         log_info "停止管理系统服务..."
         docker-compose down --remove-orphans
     fi
-    
+
+    # 停止主服务
+    cd ../docker
+    if docker-compose ps -q 2>/dev/null | grep -q .; then
+        log_info "停止主 RAGFlow 服务..."
+        docker-compose down --remove-orphans
+    fi
+
     cd ..
-    
-    # 强制删除可能存在的容器
+
+    # 强制删除可能存在的容器（确保清理干净）
     log_info "清理残留容器..."
-    docker rm -f ragflowplus-server 2>/dev/null || true
     docker rm -f ragflowplus-management-frontend 2>/dev/null || true
     docker rm -f ragflowplus-management-backend 2>/dev/null || true
+    docker rm -f ragflowplus-server 2>/dev/null || true
     docker rm -f ragflow-mysql 2>/dev/null || true
     docker rm -f ragflow-es-01 2>/dev/null || true
     docker rm -f ragflow-redis 2>/dev/null || true
     docker rm -f ragflow-minio 2>/dev/null || true
-    
+
     log_success "所有服务已停止"
 }
 
@@ -164,16 +164,10 @@ start_services() {
         log_warning "主服务可能未完全启动，继续启动管理系统..."
     fi
     
-    # 启动管理系统 - 分别启动避免冲突
+    # 启动管理系统
     cd ../management
-    log_info "启动管理系统后端..."
-    docker-compose up -d management-backend
-    
-    # 等待后端启动
-    sleep 5
-    
-    log_info "启动管理系统前端..."
-    docker-compose up -d management-frontend
+    log_info "启动管理系统服务..."
+    docker-compose up -d
     
     cd ..
     log_success "所有服务启动完成"
