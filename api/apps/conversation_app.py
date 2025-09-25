@@ -175,6 +175,17 @@ def set_conversation():
             return server_error_response(e)
 
     try:
+        # 首先检查Dialog权限
+        tenants = UserTenantService.query(user_id=current_user.id)
+        has_permission = False
+        for tenant in tenants:
+            if DialogService.query(tenant_id=tenant.tenant_id, id=req["dialog_id"]):
+                has_permission = True
+                break
+
+        if not has_permission:
+            return get_json_result(data=False, message="Only owner of dialog authorized for this operation.", code=settings.RetCode.OPERATING_ERROR)
+
         e, dia = DialogService.get_by_id(req["dialog_id"])
         if not e:
             return get_data_error_result(message="Dialog not found")
@@ -276,7 +287,15 @@ def rm():
 def list_convsersation():
     dialog_id = request.args["dialog_id"]
     try:
-        if not DialogService.query(tenant_id=current_user.id, id=dialog_id):
+        # 使用正确的权限检查逻辑
+        tenants = UserTenantService.query(user_id=current_user.id)
+        has_permission = False
+        for tenant in tenants:
+            if DialogService.query(tenant_id=tenant.tenant_id, id=dialog_id):
+                has_permission = True
+                break
+
+        if not has_permission:
             return get_json_result(data=False, message="Only owner of dialog authorized for this operation.", code=settings.RetCode.OPERATING_ERROR)
         convs = ConversationService.query(dialog_id=dialog_id, order_by=ConversationService.model.create_time, reverse=True)
 

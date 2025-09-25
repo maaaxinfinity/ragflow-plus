@@ -95,6 +95,17 @@ def set_dialog():
                 return get_data_error_result(message="Fail to new a dialog!")
             return get_json_result(data=dia)
         else:
+            # 检查更新权限
+            tenants = UserTenantService.query(user_id=current_user.id)
+            has_permission = False
+            for tenant in tenants:
+                if DialogService.query(tenant_id=tenant.tenant_id, id=dialog_id):
+                    has_permission = True
+                    break
+
+            if not has_permission:
+                return get_json_result(data=False, message="Only owner of dialog authorized for this operation.", code=settings.RetCode.OPERATING_ERROR)
+
             del req["dialog_id"]
             if "kb_names" in req:
                 del req["kb_names"]
@@ -116,6 +127,17 @@ def set_dialog():
 def get():
     dialog_id = request.args["dialog_id"]
     try:
+        # 首先检查权限
+        tenants = UserTenantService.query(user_id=current_user.id)
+        has_permission = False
+        for tenant in tenants:
+            if DialogService.query(tenant_id=tenant.tenant_id, id=dialog_id):
+                has_permission = True
+                break
+
+        if not has_permission:
+            return get_json_result(data=False, message="Only owner of dialog authorized for this operation.", code=settings.RetCode.OPERATING_ERROR)
+
         e, dia = DialogService.get_by_id(dialog_id)
         if not e:
             return get_data_error_result(message="Dialog not found!")
@@ -141,7 +163,18 @@ def get_kb_names(kb_ids):
 @login_required
 def list_dialogs():
     try:
-        diags = DialogService.query(tenant_id=current_user.id, status=StatusEnum.VALID.value, reverse=True, order_by=DialogService.model.create_time)
+        # 获取用户的所有租户角色
+        tenants = UserTenantService.query(user_id=current_user.id)
+        all_dialogs = []
+
+        # 查询每个租户下的Dialog
+        for tenant in tenants:
+            tenant_dialogs = DialogService.query(tenant_id=tenant.tenant_id, status=StatusEnum.VALID.value, reverse=True, order_by=DialogService.model.create_time)
+            all_dialogs.extend(tenant_dialogs)
+
+        # 按创建时间排序
+        all_dialogs.sort(key=lambda x: x.create_time, reverse=True)
+        diags = all_dialogs
         diags = [d.to_dict() for d in diags]
         for d in diags:
             d["kb_ids"], d["kb_names"] = get_kb_names(d["kb_ids"])
