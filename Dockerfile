@@ -11,6 +11,9 @@ COPY rag ./rag
 COPY graphrag ./graphrag
 COPY agentic_reasoning ./agentic_reasoning
 
+# 复制测试脚本目录
+COPY test ./test
+
 # 复制前端源代码目录
 COPY web ./web
 
