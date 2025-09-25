@@ -22,12 +22,17 @@ def create_test_data():
         from api.utils import get_uuid
         import hashlib
 
-        # 初始化数据库连接
-        if not DB.is_connected():
-            DB.connect(reuse_if_open=True)
+        # 测试数据库连接
+        try:
+            with DB.connection_context():
+                print("数据库连接正常")
+        except Exception as e:
+            print(f"数据库连接失败: {e}")
+            return False
 
         print("\n1. 检查现有用户:")
-        existing_users = UserService.query()
+        with DB.connection_context():
+            existing_users = UserService.query()
         if existing_users:
             print(f"  已有 {len(existing_users)} 个用户:")
             for user in existing_users:
@@ -53,18 +58,20 @@ def create_test_data():
                     "is_superuser": True
                 }
 
-                if not UserService.save(**user_dict):
-                    print("  ❌ 用户创建失败")
-                    return False
+                with DB.connection_context():
+                    if not UserService.save(**user_dict):
+                        print("  ❌ 用户创建失败")
+                        return False
 
-                print(f"  ✅ 测试用户创建成功: {test_email} (ID: {user_id})")
+                    print(f"  ✅ 测试用户创建成功: {test_email} (ID: {user_id})")
 
             except Exception as e:
                 print(f"  ❌ 创建用户时出错: {e}")
                 return False
 
         print("\n2. 检查现有Dialog:")
-        existing_dialogs = DialogService.query()
+        with DB.connection_context():
+            existing_dialogs = DialogService.query()
         if existing_dialogs:
             print(f"  已有 {len(existing_dialogs)} 个Dialog:")
             for dialog in existing_dialogs:
@@ -73,7 +80,8 @@ def create_test_data():
             print("  没有现有Dialog，创建测试Dialog...")
 
             # 获取用户列表（包括刚创建的）
-            users = UserService.query()
+            with DB.connection_context():
+                users = UserService.query()
             if users:
                 user = users[0]
                 print(f"  使用用户 {user.id} 创建Dialog...")
@@ -97,11 +105,12 @@ def create_test_data():
                 }
 
                 try:
-                    if not DialogService.save(**dialog_dict):
-                        print("  ❌ Dialog创建失败")
-                        return False
+                    with DB.connection_context():
+                        if not DialogService.save(**dialog_dict):
+                            print("  ❌ Dialog创建失败")
+                            return False
 
-                    print(f"  ✅ 测试Dialog创建成功: {dialog_dict['name']} (ID: {dialog_id})")
+                        print(f"  ✅ 测试Dialog创建成功: {dialog_dict['name']} (ID: {dialog_id})")
 
                 except Exception as e:
                     print(f"  ❌ 创建Dialog时出错: {e}")
@@ -113,25 +122,26 @@ def create_test_data():
         print("\n3. 验证数据创建结果:")
 
         # 重新查询验证
-        users = UserService.query()
-        dialogs = DialogService.query()
+        with DB.connection_context():
+            users = UserService.query()
+            dialogs = DialogService.query()
 
-        print(f"  用户总数: {len(users)}")
-        print(f"  Dialog总数: {len(dialogs)}")
+            print(f"  用户总数: {len(users)}")
+            print(f"  Dialog总数: {len(dialogs)}")
 
-        if users and dialogs:
-            print("\n4. 权限验证:")
-            user = users[0]
-            dialog = dialogs[0]
+            if users and dialogs:
+                print("\n4. 权限验证:")
+                user = users[0]
+                dialog = dialogs[0]
 
-            # 测试权限查询
-            has_permission = DialogService.query(tenant_id=user.id, id=dialog.id)
-            if has_permission:
-                print(f"  ✅ 用户 {user.id} 对 Dialog {dialog.id} 有权限")
-            else:
-                print(f"  ❌ 用户 {user.id} 对 Dialog {dialog.id} 无权限")
-                print(f"     用户ID: {user.id}")
-                print(f"     Dialog的tenant_id: {dialog.tenant_id}")
+                # 测试权限查询
+                has_permission = DialogService.query(tenant_id=user.id, id=dialog.id)
+                if has_permission:
+                    print(f"  ✅ 用户 {user.id} 对 Dialog {dialog.id} 有权限")
+                else:
+                    print(f"  ❌ 用户 {user.id} 对 Dialog {dialog.id} 无权限")
+                    print(f"     用户ID: {user.id}")
+                    print(f"     Dialog的tenant_id: {dialog.tenant_id}")
 
         return True
 
@@ -140,10 +150,6 @@ def create_test_data():
         import traceback
         traceback.print_exc()
         return False
-    finally:
-        # 关闭数据库连接
-        if DB.is_connected():
-            DB.close()
 
 if __name__ == "__main__":
     create_test_data()
