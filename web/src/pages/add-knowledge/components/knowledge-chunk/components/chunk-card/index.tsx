@@ -66,14 +66,12 @@ const ChunkCard = ({
     return (
       <div className={styles.keywords}>
         {allKeywords.slice(0, 3).map((keyword, index) => (
-          <Tag key={index} size="small" color="blue">
+          <Tag key={index} color="blue">
             {keyword}
           </Tag>
         ))}
         {allKeywords.length > 3 && (
-          <Tag size="small" color="default">
-            +{allKeywords.length - 3}
-          </Tag>
+          <Tag color="default">+{allKeywords.length - 3}</Tag>
         )}
       </div>
     );

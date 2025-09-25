@@ -21,6 +21,7 @@ export const variableEnabledFieldMap = {
 
 export enum SharedFrom {
   Chat = 'chat',
+  Agent = 'agent',
 }
 
 export enum ChatSearchParams {

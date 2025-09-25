@@ -212,7 +212,7 @@ const KnowledgeFile = () => {
       />
       <ChunkMethodModal
         documentId={currentRecord.id}
-        parserId={currentRecord.parser_id}
+        parserId={currentRecord.parser_id as any}
         parserConfig={currentRecord.parser_config}
         documentExtension={getExtension(currentRecord.name)}
         onOk={onChangeParserOk}

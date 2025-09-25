@@ -1,6 +1,17 @@
 import isObject from 'lodash/isObject';
-import { DvaModel } from 'umi';
 import { BaseState } from './interfaces/common';
+
+// 定义 DvaModel 接口，替代从 umi 导入
+interface DvaModel<T = any> {
+  namespace?: string;
+  state?: T;
+  reducers?: Record<
+    string,
+    (state: T, action: { payload?: any; type?: string }) => T
+  >;
+  effects?: Record<string, any>;
+  subscriptions?: Record<string, any>;
+}
 
 type State = Record<string, any>;
 type DvaModelKey<T> = keyof DvaModel<T>;
@@ -38,11 +49,17 @@ export const paginationModel: Partial<DvaModel<BaseState>> = {
     },
   },
   reducers: {
-    setSearchString(state, { payload }) {
-      return { ...state, searchString: payload };
+    setSearchString(
+      state: BaseState,
+      action: { payload?: any; type?: string },
+    ) {
+      return { ...state, searchString: action.payload };
     },
-    setPagination(state, { payload }) {
-      return { ...state, pagination: { ...state.pagination, ...payload } };
+    setPagination(state: BaseState, action: { payload?: any; type?: string }) {
+      return {
+        ...state,
+        pagination: { ...state.pagination, ...action.payload },
+      };
     },
   },
 };

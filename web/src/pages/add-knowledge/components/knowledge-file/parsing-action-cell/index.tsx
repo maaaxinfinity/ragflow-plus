@@ -8,10 +8,8 @@
 //   EditOutlined,
 //   ToolOutlined,
 // } from '@ant-design/icons';
+import { IDocumentInfo } from '@/interfaces/database/document';
 import { Space } from 'antd';
-// import { isParserRunning } from '../utils';
-
-// import { useCallback } from 'react';
 // import { DocumentType } from '../constant';
 // import styles from './index.less';
 

@@ -138,6 +138,9 @@ const methods = {
   },
 } as const;
 
-const chatService = registerServer<keyof typeof methods>(methods, request);
+const chatService = registerServer<keyof typeof methods>(
+  methods as any,
+  request,
+);
 
 export default chatService;

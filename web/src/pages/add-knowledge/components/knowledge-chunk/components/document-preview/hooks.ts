@@ -1,7 +1,7 @@
 import { useGetKnowledgeSearchParams } from '@/hooks/route-hook';
 import { api_host } from '@/utils/api';
 import { useSize } from 'ahooks';
-import { CustomTextRenderer } from 'node_modules/react-pdf/dist/esm/shared/types';
+// import { CustomTextRenderer } from 'node_modules/react-pdf/dist/esm/shared/types';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 export const useDocumentResizeObserver = () => {
@@ -34,8 +34,8 @@ function highlightPattern(text: string, pattern: string, pageNumber: number) {
 }
 
 export const useHighlightText = (searchText: string = '') => {
-  const textRenderer: CustomTextRenderer = useCallback(
-    (textItem) => {
+  const textRenderer = useCallback(
+    (textItem: any) => {
       return highlightPattern(textItem.str, searchText, textItem.pageNumber);
     },
     [searchText],

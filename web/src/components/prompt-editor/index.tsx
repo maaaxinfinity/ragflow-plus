@@ -35,10 +35,10 @@ function onError(error: Error) {
 }
 
 const Nodes: Array<Klass<LexicalNode>> = [
-  HeadingNode,
-  QuoteNode,
-  CodeHighlightNode,
-  CodeNode,
+  HeadingNode as any,
+  QuoteNode as any,
+  CodeHighlightNode as any,
+  CodeNode as any,
   VariableNode,
 ];
 

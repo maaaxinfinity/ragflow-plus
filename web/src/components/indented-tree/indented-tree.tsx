@@ -59,7 +59,8 @@ class IndentedNode extends BaseNode {
   }
 
   get childrenData() {
-    return this.attributes.context?.model.getChildrenData(this.id);
+    // 修复context属性错误，使用正确的属性名
+    return (this.attributes as any).model?.getChildrenData?.(this.id) || [];
   }
 
   getKeyStyle(attributes: any) {
@@ -218,12 +219,14 @@ class IndentedNode extends BaseNode {
 class IndentedEdge extends Polyline {
   getControlPoints(
     attributes: Required<PolylineStyleProps>,
-    sourcePoint: Point,
-    targetPoint: Point,
-  ) {
+    sourcePoint?: Point,
+    targetPoint?: Point,
+  ): Point[] {
+    // 修复方法签名，返回Point数组
+    if (!sourcePoint || !targetPoint) return [];
     const [sx] = sourcePoint;
     const [, ty] = targetPoint;
-    return [[sx, ty]] as any;
+    return [[sx, ty]] as Point[];
   }
 }
 

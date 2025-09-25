@@ -61,7 +61,7 @@ interface FileData {
   name: string
   size: number
   type: string
-  kb_id: string
+  kb_id?: string
   location: string
   create_time?: number
 }

@@ -7,10 +7,11 @@ import styles from './index.less';
 
 interface IImage {
   id: string;
-  className: string;
+  className?: string;
+  style?: React.CSSProperties;
 }
 
-const ChunkImage = ({ id, className, ...props }: IImage) => {
+const ChunkImage = ({ id, className, style, ...props }: IImage) => {
   // const host = process.env.MINIO_VISIT_HOST || 'localhost';
   // const port = process.env.MINIO_PORT || '9000';
   // const imgSrc = `http://${host}:${port}/${id}`;
@@ -35,6 +36,7 @@ const ChunkImage = ({ id, className, ...props }: IImage) => {
       {...props}
       src={imgSrc}
       alt=""
+      style={style}
       className={classNames(styles.primitiveImg, className)}
     />
   );

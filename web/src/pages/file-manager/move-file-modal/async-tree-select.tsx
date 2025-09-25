@@ -20,7 +20,8 @@ const AsyncTreeSelect = ({ value, onChange }: IProps) => {
   );
 
   const onLoadData: TreeSelectProps['loadData'] = useCallback(
-    async ({ id }) => {
+    async (dataNode: any) => {
+      const { id } = dataNode;
       const ret = await fetchList(id);
       if (ret.code === 0) {
         setTreeData((tree) => {
