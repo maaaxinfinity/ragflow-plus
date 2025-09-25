@@ -502,6 +502,7 @@ const knowledgeBaseList = ref<KnowledgeBaseItem[]>([])
 const dialogVisible = ref(false)
 const submitLoading = ref(false)
 const formRef = ref()
+const activeTab = ref('assistant')
 
 // 表单数据
 const formData = reactive({
@@ -514,7 +515,21 @@ const formData = reactive({
   system_prompt: '',
   welcome_message: '',
   is_default: false,
-  status: 'active'
+  status: 'active',
+  language: 'zh-CN',
+  empty_response: '抱歉，我无法理解您的问题。',
+  similarity_threshold: 0.2,
+  vector_similarity_weight: 0.3,
+  vector_keywords_weight: 0.7,
+  top_n: 8,
+  rerank_enabled: false,
+  rerank_model: '',
+  temperature: 0.1,
+  max_tokens: 512,
+  top_p: 0.3,
+  frequency_penalty: 0.7,
+  presence_penalty: 0.4,
+  stream: false
 })
 
 // 表单验证规则
