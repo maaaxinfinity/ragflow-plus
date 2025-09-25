@@ -163,15 +163,6 @@ start_all_services() {
     log_info "验证主服务状态..."
     docker-compose ps
 
-    # 启动管理系统
-    cd ../management
-    log_info "启动管理系统服务..."
-    docker-compose up -d
-
-    # 等待管理系统启动
-    sleep 10
-
-    cd ..
     log_success "所有服务启动完成"
 }
 
