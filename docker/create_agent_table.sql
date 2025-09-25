@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS agent_config (
     system_prompt TEXT,
     welcome_message TEXT,
     language VARCHAR(10) DEFAULT 'zh-CN',
-    empty_response TEXT DEFAULT '抱歉，我无法理解您的问题。',
+    empty_response TEXT,
     similarity_threshold DECIMAL(3,2) DEFAULT 0.2,
     vector_similarity_weight DECIMAL(3,2) DEFAULT 0.3,
     vector_keywords_weight DECIMAL(3,2) DEFAULT 0.7,

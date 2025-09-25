@@ -182,7 +182,7 @@ class AgentService:
                 agent_id, data["name"], data["team_id"], data.get("description", ""),
                 data["model_name"], kb_ids_json, data.get("system_prompt", ""),
                 data.get("welcome_message", ""), data.get("language", "zh-CN"),
-                data.get("empty_response", "抱歉，我无法理解您的问题。"),
+                data.get("empty_response") or "抱歉，我无法理解您的问题。",
                 data.get("similarity_threshold", 0.2), data.get("vector_similarity_weight", 0.3),
                 data.get("vector_keywords_weight", 0.7), data.get("top_n", 8),
                 data.get("rerank_enabled", False), data.get("rerank_model", ""),
