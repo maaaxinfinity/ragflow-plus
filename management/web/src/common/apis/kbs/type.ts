@@ -11,7 +11,7 @@ export interface FileData {
   /** 文件类型 */
   type: string
   /** 知识库ID */
-  kb_id: string
+  kb_id?: string
   /** 存储位置 */
   location: string
   /** 创建时间 */

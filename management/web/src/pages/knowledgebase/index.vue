@@ -711,8 +711,10 @@ const filePaginationData = reactive({
 const documentDisplayMode = ref<'table' | 'tree'>('table')
 
 // 处理展示模式变化
-function handleDisplayModeChange(mode: string) {
-  documentDisplayMode.value = mode as 'table' | 'tree'
+function handleDisplayModeChange(mode: string | number | boolean | undefined) {
+  if (typeof mode === 'string') {
+    documentDisplayMode.value = mode as 'table' | 'tree'
+  }
 }
 
 // 处理文档点击（树形视图）
