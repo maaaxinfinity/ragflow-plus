@@ -229,6 +229,9 @@ main() {
     # 启动服务
     start_all_services
 
+    # 确保回到根目录
+    cd "$SCRIPT_ROOT"
+
     # 显示最终状态
     show_final_status
 

@@ -75,5 +75,17 @@ def login():
     return {"code": 0, "data": {"token": token}, "message": "登录成功"}
 
 
+def init_database():
+    """初始化数据库，创建必要的表"""
+    try:
+        print("初始化数据库表...")
+        from create_agent_table import create_agent_config_table
+        create_agent_config_table()
+        print("数据库初始化完成")
+    except Exception as e:
+        print(f"数据库初始化失败: {str(e)}")
+
 if __name__ == "__main__":
+    # 启动前初始化数据库
+    init_database()
     app.run(host="0.0.0.0", port=5000)
