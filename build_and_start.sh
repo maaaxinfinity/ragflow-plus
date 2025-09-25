@@ -175,11 +175,21 @@ show_final_status() {
     echo "服务状态"
     echo "=========================================="
 
-    cd docker
-    echo "所有服务状态:"
-    docker-compose ps
+    # 获取脚本所在目录的绝对路径
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    DOCKER_DIR="$SCRIPT_DIR/docker"
 
-    cd ..
+    if [ -d "$DOCKER_DIR" ]; then
+        cd "$DOCKER_DIR"
+        echo "所有服务状态:"
+        docker-compose ps
+        cd "$SCRIPT_DIR"
+    else
+        echo "错误: docker 目录不存在于 $DOCKER_DIR"
+        echo "当前工作目录: $(pwd)"
+        echo "尝试显示当前目录下的 docker-compose 状态:"
+        docker-compose -f docker/docker-compose.yml ps 2>/dev/null || echo "无法获取 docker-compose 状态"
+    fi
 
     echo ""
     echo "=========================================="

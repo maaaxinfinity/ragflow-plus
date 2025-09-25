@@ -26,7 +26,6 @@ import { IConversation, IDialog, Message } from '@/interfaces/database/chat';
 import { getFileExtension } from '@/utils';
 import api from '@/utils/api';
 import { getConversationId } from '@/utils/chat';
-import { translationService } from '@/services/translationService';
 import { useMutationState } from '@tanstack/react-query';
 import { get } from 'lodash';
 import trim from 'lodash/trim';
@@ -231,7 +230,7 @@ export const useSelectDerivedConversationList = () => {
               },
             ],
           } as any,
-          ...conversationList,
+          ...(Array.isArray(conversationList) ? conversationList : []),
         ];
         return nextList;
       }
@@ -243,7 +242,9 @@ export const useSelectDerivedConversationList = () => {
   // When you first enter the page, select the top conversation card
 
   useEffect(() => {
-    setList([...conversationList]);
+    if (Array.isArray(conversationList)) {
+      setList([...conversationList]);
+    }
   }, [conversationList]);
 
   return { list, addTemporaryConversation, loading };
@@ -419,7 +420,7 @@ export const useSendNextMessage = (controller: AbortController) => {
   const handleSendMessage = useCallback(
     async (message: Message) => {
       const isNew = getConversationIsNew();
-      
+
       if (isNew !== 'true') {
         sendMessage({ message });
       } else {
