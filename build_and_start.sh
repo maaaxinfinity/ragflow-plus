@@ -176,12 +176,7 @@ show_final_status() {
     echo "=========================================="
 
     cd docker
-    echo "主 RAGFlow 服务:"
-    docker-compose ps
-
-    echo ""
-    cd ../management
-    echo "管理系统服务:"
+    echo "所有服务状态:"
     docker-compose ps
 
     cd ..

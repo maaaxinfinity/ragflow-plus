@@ -52,13 +52,17 @@ class AgentService:
             # 查询列表
             offset = (page - 1) * size
             list_query = f"""
-                SELECT 
+                SELECT
                     a.id, a.name, a.team_id, a.description, a.model_name,
-                    a.kb_ids, a.system_prompt, a.welcome_message, a.is_default,
-                    a.status, a.create_time, a.create_date, a.update_time, a.update_date,
+                    a.kb_ids, a.system_prompt, a.welcome_message, a.language,
+                    a.empty_response, a.similarity_threshold, a.vector_similarity_weight,
+                    a.vector_keywords_weight, a.top_n, a.rerank_enabled, a.rerank_model,
+                    a.temperature, a.max_tokens, a.top_p, a.frequency_penalty,
+                    a.presence_penalty, a.stream, a.is_default, a.status,
+                    a.create_time, a.create_date, a.update_time, a.update_date,
                     t.name as team_name
                 FROM agent_config a
-                LEFT JOIN team t ON a.team_id = t.id
+                LEFT JOIN tenant t ON a.team_id = t.id
                 {where_clause}
                 {sort_clause}
                 LIMIT %s OFFSET %s
@@ -165,18 +169,28 @@ class AgentService:
             insert_query = """
                 INSERT INTO agent_config (
                     id, name, team_id, description, model_name, kb_ids,
-                    system_prompt, welcome_message, is_default, status,
-                    create_time, create_date, update_time, update_date
+                    system_prompt, welcome_message, language, empty_response,
+                    similarity_threshold, vector_similarity_weight, vector_keywords_weight,
+                    top_n, rerank_enabled, rerank_model, temperature, max_tokens,
+                    top_p, frequency_penalty, presence_penalty, stream,
+                    is_default, status, create_time, create_date, update_time, update_date
                 ) VALUES (
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
                 )
             """
             cursor.execute(insert_query, (
                 agent_id, data["name"], data["team_id"], data.get("description", ""),
                 data["model_name"], kb_ids_json, data.get("system_prompt", ""),
-                data.get("welcome_message", ""), data.get("is_default", False),
-                data.get("status", "active"), current_time, current_date,
-                current_time, current_date
+                data.get("welcome_message", ""), data.get("language", "zh-CN"),
+                data.get("empty_response", "抱歉，我无法理解您的问题。"),
+                data.get("similarity_threshold", 0.2), data.get("vector_similarity_weight", 0.3),
+                data.get("vector_keywords_weight", 0.7), data.get("top_n", 8),
+                data.get("rerank_enabled", False), data.get("rerank_model", ""),
+                data.get("temperature", 0.1), data.get("max_tokens", 512),
+                data.get("top_p", 0.3), data.get("frequency_penalty", 0.7),
+                data.get("presence_penalty", 0.4), data.get("stream", False),
+                data.get("is_default", False), data.get("status", "active"),
+                current_time, current_date, current_time, current_date
             ))
 
             conn.commit()

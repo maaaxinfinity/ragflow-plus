@@ -1,6 +1,3 @@
-CREATE DATABASE IF NOT EXISTS rag_flow;
-USE rag_flow;
-
 -- 创建agent_config表用于存储管理系统的Agent配置
 CREATE TABLE IF NOT EXISTS agent_config (
     id VARCHAR(36) PRIMARY KEY,
