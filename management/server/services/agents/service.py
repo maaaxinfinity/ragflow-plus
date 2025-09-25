@@ -156,8 +156,14 @@ class AgentService:
 
             # 如果设为默认，先取消同团队其他Agent的默认状态
             if data.get("is_default", False):
-                update_query = "UPDATE agent_config SET is_default = 0 WHERE team_id = %s"
-                cursor.execute(update_query, (data["team_id"],))
+                # 导入RAGFlow的数据库模块来正确处理事务
+                import sys
+                sys.path.insert(0, '/ragflow')
+                sys.path.insert(0, '/ragflow/api')
+                from api.db.db_models import DB
+
+                with DB.connection_context():
+                    DB.execute_sql("UPDATE agent_config SET is_default = 0 WHERE team_id = %s", (data["team_id"],))
 
             # 创建Agent
             agent_id = get_uuid()
@@ -219,8 +225,15 @@ class AgentService:
 
             # 如果设为默认，先取消同团队其他Agent的默认状态
             if data.get("is_default", False):
-                update_query = "UPDATE agent_config SET is_default = 0 WHERE team_id = %s AND id != %s"
-                cursor.execute(update_query, (existing_agent["team_id"], agent_id))
+                # 导入RAGFlow的数据库模块来正确处理事务
+                import sys
+                sys.path.insert(0, '/ragflow')
+                sys.path.insert(0, '/ragflow/api')
+                from api.db.db_models import DB
+
+                with DB.connection_context():
+                    DB.execute_sql("UPDATE agent_config SET is_default = 0 WHERE team_id = %s AND id != %s",
+                                   (existing_agent["team_id"], agent_id))
 
             # 更新Agent
             current_time = int(datetime.now().timestamp())
@@ -278,24 +291,22 @@ class AgentService:
 
     @classmethod
     def delete_agent(cls, agent_id):
-        """删除Agent配置"""
+        """删除Agent配置 - 使用RAGFlow的数据库连接方式"""
         try:
-            conn = cls._get_db_connection()
-            cursor = conn.cursor()
+            # 导入RAGFlow的数据库模块
+            import sys
+            sys.path.insert(0, '/ragflow')
+            sys.path.insert(0, '/ragflow/api')
+            from api.db.db_models import DB
 
-            # 检查Agent是否存在
-            check_query = "SELECT id FROM agent_config WHERE id = %s"
-            cursor.execute(check_query, (agent_id,))
-            if not cursor.fetchone():
-                return False
+            with DB.connection_context():
+                # 检查Agent是否存在
+                cursor = DB.execute_sql("SELECT id FROM agent_config WHERE id = %s", (agent_id,))
+                if not cursor.fetchone():
+                    return False
 
-            # 删除Agent
-            delete_query = "DELETE FROM agent_config WHERE id = %s"
-            cursor.execute(delete_query, (agent_id,))
-
-            conn.commit()
-            cursor.close()
-            conn.close()
+                # 删除Agent
+                DB.execute_sql("DELETE FROM agent_config WHERE id = %s", (agent_id,))
 
             return True
 
@@ -305,30 +316,32 @@ class AgentService:
 
     @classmethod
     def set_default_agent(cls, agent_id, is_default):
-        """设置默认Agent"""
+        """设置默认Agent - 使用RAGFlow的数据库连接方式"""
         try:
-            conn = cls._get_db_connection()
-            cursor = conn.cursor(dictionary=True)
+            # 导入RAGFlow的数据库模块
+            import sys
+            sys.path.insert(0, '/ragflow')
+            sys.path.insert(0, '/ragflow/api')
+            from api.db.db_models import DB
 
-            # 获取Agent信息
-            agent_query = "SELECT id, team_id FROM agent_config WHERE id = %s"
-            cursor.execute(agent_query, (agent_id,))
-            agent = cursor.fetchone()
-            if not agent:
-                return False
+            with DB.connection_context():
+                # 获取Agent信息
+                cursor = DB.execute_sql("SELECT id, team_id FROM agent_config WHERE id = %s", (agent_id,))
+                row = cursor.fetchone()
+                if not row:
+                    return False
 
-            if is_default:
-                # 先取消同团队其他Agent的默认状态
-                update_query = "UPDATE agent_config SET is_default = 0 WHERE team_id = %s"
-                cursor.execute(update_query, (agent["team_id"],))
+                columns = [desc[0] for desc in cursor.description]
+                agent = dict(zip(columns, row))
 
-            # 更新当前Agent的默认状态
-            update_query = "UPDATE agent_config SET is_default = %s WHERE id = %s"
-            cursor.execute(update_query, (is_default, agent_id))
+                if is_default:
+                    # 先取消同团队其他Agent的默认状态
+                    DB.execute_sql("UPDATE agent_config SET is_default = 0 WHERE team_id = %s AND id != %s",
+                                   (agent["team_id"], agent_id))
 
-            conn.commit()
-            cursor.close()
-            conn.close()
+                # 更新当前Agent的默认状态
+                DB.execute_sql("UPDATE agent_config SET is_default = %s WHERE id = %s",
+                               (is_default, agent_id))
 
             return True
 

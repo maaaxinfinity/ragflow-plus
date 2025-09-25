@@ -165,6 +165,25 @@
               />
             </el-form-item>
 
+            <el-form-item label="头像" prop="avatar">
+              <el-upload
+                class="avatar-uploader"
+                action=""
+                :show-file-list="false"
+                :before-upload="handleAvatarUpload"
+                accept="image/*"
+              >
+                <img v-if="formData.avatar" :src="formData.avatar" class="avatar" />
+                <div v-else class="avatar-placeholder">
+                  <el-icon class="avatar-uploader-icon"><Plus /></el-icon>
+                  <div class="upload-text">上传头像</div>
+                </div>
+              </el-upload>
+              <div class="form-tip">
+                支持 JPG、PNG 格式，建议尺寸 200x200 像素
+              </div>
+            </el-form-item>
+
             <el-form-item label="语言" prop="language">
               <el-select v-model="formData.language" style="width: 100%">
                 <el-option label="中文" value="Chinese" />
@@ -510,6 +529,7 @@ const formData = reactive({
   name: '',
   team_id: '',
   description: '',
+  avatar: '/assets/agent/Agent-icon.svg', // 添加头像字段，设置默认头像
   model_name: '',
   kb_ids: [] as string[],
   system_prompt: '',
@@ -661,10 +681,25 @@ const handleEdit = (row: any) => {
     name: row.name,
     team_id: row.team_id,
     description: row.description,
+    avatar: row.avatar || getDefaultAvatar(),
     model_name: row.model_name,
     kb_ids: row.kb_ids || [],
     system_prompt: row.system_prompt,
     welcome_message: row.welcome_message,
+    language: row.language || 'zh-CN',
+    empty_response: row.empty_response || '抱歉，我无法理解您的问题。',
+    similarity_threshold: row.similarity_threshold || 0.2,
+    vector_similarity_weight: row.vector_similarity_weight || 0.3,
+    vector_keywords_weight: row.vector_keywords_weight || 0.7,
+    top_n: row.top_n || 8,
+    rerank_enabled: row.rerank_enabled || false,
+    rerank_model: row.rerank_model || '',
+    temperature: row.temperature || 0.1,
+    max_tokens: row.max_tokens || 512,
+    top_p: row.top_p || 0.3,
+    frequency_penalty: row.frequency_penalty || 0.7,
+    presence_penalty: row.presence_penalty || 0.4,
+    stream: row.stream || false,
     is_default: row.is_default,
     status: row.status
   })
@@ -683,10 +718,23 @@ const handleDelete = async (row: any) => {
         type: 'warning'
       }
     )
-    
-    // 模拟删除API
-    ElMessage.success('删除成功')
-    getTableData()
+
+    // 调用真实删除API
+    const response = await fetch(`/api/v1/agents/${row.id}`, {
+      method: 'DELETE'
+    })
+
+    if (response.ok) {
+      const result = await response.json()
+      if (result.code === 0) {
+        ElMessage.success('删除成功')
+        getTableData()
+      } else {
+        ElMessage.error(result.message || '删除失败')
+      }
+    } else {
+      ElMessage.error('删除失败')
+    }
   } catch (error) {
     if (error !== 'cancel') {
       ElMessage.error('删除失败')
@@ -698,19 +746,39 @@ const handleDelete = async (row: any) => {
 const handleDefaultChange = async (row: any) => {
   row.updating = true
   try {
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    if (row.is_default) {
-      // 如果设为默认，需要取消同团队其他Agent的默认状态
-      tableData.value.forEach(item => {
-        if (item.team_id === row.team_id && item.id !== row.id) {
-          item.is_default = false
-        }
+    // 调用真实API设置默认状态
+    const response = await fetch(`/api/v1/agents/${row.id}/default`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        is_default: row.is_default
       })
+    })
+
+    if (response.ok) {
+      const result = await response.json()
+      if (result.code === 0) {
+        if (row.is_default) {
+          // 如果设为默认，需要取消同团队其他Agent的默认状态
+          tableData.value.forEach(item => {
+            if (item.team_id === row.team_id && item.id !== row.id) {
+              item.is_default = false
+            }
+          })
+        }
+        ElMessage.success(row.is_default ? '已设为默认Agent' : '已取消默认Agent')
+      } else {
+        // 恢复原状态
+        row.is_default = !row.is_default
+        ElMessage.error(result.message || '操作失败')
+      }
+    } else {
+      // 恢复原状态
+      row.is_default = !row.is_default
+      ElMessage.error('操作失败')
     }
-    
-    ElMessage.success(row.is_default ? '已设为默认Agent' : '已取消默认Agent')
   } catch (error) {
     // 恢复原状态
     row.is_default = !row.is_default
@@ -742,10 +810,25 @@ const handleSubmit = async () => {
         name: formData.name,
         team_id: formData.team_id,
         description: formData.description,
+        avatar: formData.avatar,
         model_name: formData.model_name,
         kb_ids: formData.kb_ids,
         system_prompt: formData.system_prompt,
         welcome_message: formData.welcome_message,
+        language: formData.language,
+        empty_response: formData.empty_response,
+        similarity_threshold: formData.similarity_threshold,
+        vector_similarity_weight: formData.vector_similarity_weight,
+        vector_keywords_weight: formData.vector_keywords_weight,
+        top_n: formData.top_n,
+        rerank_enabled: formData.rerank_enabled,
+        rerank_model: formData.rerank_model,
+        temperature: formData.temperature,
+        max_tokens: formData.max_tokens,
+        top_p: formData.top_p,
+        frequency_penalty: formData.frequency_penalty,
+        presence_penalty: formData.presence_penalty,
+        stream: formData.stream,
         is_default: formData.is_default,
         status: formData.status
       })
@@ -771,6 +854,35 @@ const handleSubmit = async () => {
   }
 }
 
+// 获取默认头像
+const getDefaultAvatar = () => {
+  return '/assets/agent/Agent-icon.svg'
+}
+
+// 头像上传处理
+const handleAvatarUpload = (file: File) => {
+  const isJPG = file.type === 'image/jpeg' || file.type === 'image/png'
+  const isLt2M = file.size / 1024 / 1024 < 2
+
+  if (!isJPG) {
+    ElMessage.error('头像图片只能是 JPG/PNG 格式!')
+    return false
+  }
+  if (!isLt2M) {
+    ElMessage.error('头像图片大小不能超过 2MB!')
+    return false
+  }
+
+  // 转换为base64
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    formData.avatar = e.target?.result as string
+  }
+  reader.readAsDataURL(file)
+
+  return false // 阻止自动上传
+}
+
 // 重置表单
 const resetForm = () => {
   Object.assign(formData, {
@@ -778,6 +890,7 @@ const resetForm = () => {
     name: '',
     team_id: '',
     description: '',
+    avatar: getDefaultAvatar(), // 设置默认头像
     model_name: '',
     kb_ids: [],
     system_prompt: '',
@@ -857,5 +970,49 @@ onMounted(() => {
 
 :deep(.el-dialog__body) {
   padding: 20px;
+}
+
+.avatar-uploader {
+  border: 1px dashed #d9d9d9;
+  border-radius: 6px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.3s;
+  width: 100px;
+  height: 100px;
+  display: block;
+}
+
+.avatar-uploader:hover {
+  border-color: #409eff;
+}
+
+.avatar {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  display: block;
+}
+
+.avatar-placeholder {
+  width: 100px;
+  height: 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #fafafa;
+}
+
+.avatar-uploader-icon {
+  font-size: 28px;
+  color: #8c939d;
+}
+
+.upload-text {
+  font-size: 12px;
+  color: #999;
+  margin-top: 4px;
 }
 </style>

@@ -14,22 +14,35 @@ export function ChatCard({ data }: IProps) {
   const { navigateToChat } = useNavigatePage();
 
   return (
-    <Card className="bg-colors-background-inverse-weak  border-colors-outline-neutral-standard">
+    <Card
+      className={`bg-colors-background-inverse-weak ${data.name.includes('⭐') ? 'border-yellow-400 border-2 shadow-lg' : 'border-colors-outline-neutral-standard'}`}
+    >
       <CardContent className="p-4">
         <div className="flex justify-between mb-4">
-          {data.icon ? (
-            <div
-              className="w-[70px] h-[70px] rounded-xl bg-cover"
-              style={{ backgroundImage: `url(${data.icon})` }}
-            />
-          ) : (
-            <Avatar className="w-[70px] h-[70px]">
-              <AvatarImage src="https://github.com/shadcn.png" />
-              <AvatarFallback>CN</AvatarFallback>
-            </Avatar>
-          )}
+          <div className="relative">
+            {data.icon ? (
+              <div
+                className="w-[70px] h-[70px] rounded-xl bg-cover"
+                style={{ backgroundImage: `url(${data.icon})` }}
+              />
+            ) : (
+              <Avatar className="w-[70px] h-[70px]">
+                <AvatarImage src="https://github.com/shadcn.png" />
+                <AvatarFallback>CN</AvatarFallback>
+              </Avatar>
+            )}
+            {data.name.includes('⭐') && (
+              <div className="absolute -top-1 -right-1 bg-yellow-400 text-black text-xs px-1 py-0.5 rounded-full font-bold">
+                默认
+              </div>
+            )}
+          </div>
         </div>
-        <h3 className="text-xl font-bold mb-2">{data.name}</h3>
+        <h3
+          className={`text-xl font-bold mb-2 ${data.name.includes('⭐') ? 'text-yellow-600' : ''}`}
+        >
+          {data.name}
+        </h3>
         <p>An app that does things An app that does things</p>
         <section className="flex justify-between pt-3">
           <div>

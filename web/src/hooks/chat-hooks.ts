@@ -119,7 +119,7 @@ export const useFetchNextDialogList = () => {
       const convertedAgents: IDialog[] = managementAgents.map((agent: any) => ({
         id: `agent_${agent.id}`, // 添加前缀避免ID冲突
         dialog_id: `agent_${agent.id}`,
-        name: agent.name,
+        name: agent.is_default ? `${agent.name} ⭐` : agent.name, // 为默认agent添加星标
         description: agent.description || '',
         icon: '', // 可以设置默认图标
         kb_ids: agent.kb_ids || [],
@@ -146,6 +146,7 @@ export const useFetchNextDialogList = () => {
         // 标记为来自管理系统
         source: 'management',
         team_id: agent.team_id,
+        is_default: agent.is_default, // 保留默认标识
       }));
 
       let allDialogs: IDialog[] = [];
