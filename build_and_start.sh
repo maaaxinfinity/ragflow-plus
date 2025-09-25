@@ -177,18 +177,22 @@ show_final_status() {
 
     # 获取脚本所在目录的绝对路径
     SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    DOCKER_DIR="$SCRIPT_DIR/docker"
+    DOCKER_COMPOSE_FILE="$SCRIPT_DIR/docker/docker-compose.yml"
 
-    if [ -d "$DOCKER_DIR" ]; then
-        cd "$DOCKER_DIR"
-        echo "所有服务状态:"
-        docker-compose ps
-        cd "$SCRIPT_DIR"
+    echo "所有服务状态:"
+    if [ -f "$DOCKER_COMPOSE_FILE" ]; then
+        docker-compose -f "$DOCKER_COMPOSE_FILE" ps
     else
-        echo "错误: docker 目录不存在于 $DOCKER_DIR"
+        echo "错误: docker-compose.yml 文件不存在于 $DOCKER_COMPOSE_FILE"
+        echo "脚本目录: $SCRIPT_DIR"
         echo "当前工作目录: $(pwd)"
-        echo "尝试显示当前目录下的 docker-compose 状态:"
-        docker-compose -f docker/docker-compose.yml ps 2>/dev/null || echo "无法获取 docker-compose 状态"
+        # 尝试其他可能的位置
+        if [ -f "docker-compose.yml" ]; then
+            echo "在当前目录找到 docker-compose.yml，使用它:"
+            docker-compose ps
+        else
+            echo "无法找到 docker-compose.yml 文件"
+        fi
     fi
 
     echo ""
@@ -207,18 +211,26 @@ show_final_status() {
     # 健康检查
     log_info "执行健康检查..."
 
-    # 检查主服务
-    if docker-compose -f docker/docker-compose.yml ps | grep -q "ragflowplus-server.*Up"; then
-        log_success "主 RAGFlow 服务运行正常"
-    else
-        log_warning "主 RAGFlow 服务可能存在问题"
-    fi
+    # 获取脚本所在目录的绝对路径
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    MAIN_COMPOSE_FILE="$SCRIPT_DIR/docker/docker-compose.yml"
 
-    # 检查管理系统
-    if docker-compose -f management/docker-compose.yml ps | grep -q "ragflowplus-management.*Up"; then
-        log_success "管理系统服务运行正常"
+    # 检查主服务
+    if [ -f "$MAIN_COMPOSE_FILE" ]; then
+        if docker-compose -f "$MAIN_COMPOSE_FILE" ps | grep -q "ragflowplus-server.*Up"; then
+            log_success "主 RAGFlow 服务运行正常"
+        else
+            log_warning "主 RAGFlow 服务可能存在问题"
+        fi
+
+        # 检查管理系统（所有服务都在同一个compose文件中）
+        if docker-compose -f "$MAIN_COMPOSE_FILE" ps | grep -q "ragflowplus-management.*Up"; then
+            log_success "管理系统服务运行正常"
+        else
+            log_warning "管理系统服务可能存在问题"
+        fi
     else
-        log_warning "管理系统服务可能存在问题"
+        log_warning "无法找到 docker-compose.yml 文件进行健康检查"
     fi
 }
 

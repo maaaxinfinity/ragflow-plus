@@ -1,0 +1,1802 @@
+.
+├── agentic_reasoning
+│   ├── deep_research.py
+│   ├── __init__.py
+│   └── prompts.py
+├── api
+│   ├── apps
+│   │   ├── api_app.py
+│   │   ├── chunk_app.py
+│   │   ├── conversation_app.py
+│   │   ├── dialog_app.py
+│   │   ├── document_app.py
+│   │   ├── file2document_app.py
+│   │   ├── file_app.py
+│   │   ├── __init__.py
+│   │   ├── kb_app.py
+│   │   ├── llm_app.py
+│   │   ├── minio_app.py
+│   │   ├── sdk
+│   │   │   ├── chat.py
+│   │   │   ├── dataset.py
+│   │   │   ├── dify_retrieval.py
+│   │   │   ├── doc.py
+│   │   │   └── session.py
+│   │   ├── system_app.py
+│   │   ├── tenant_app.py
+│   │   ├── translate_app.py
+│   │   └── user_app.py
+│   ├── constants.py
+│   ├── db
+│   │   ├── db_models.py
+│   │   ├── db_utils.py
+│   │   ├── init_data.py
+│   │   ├── __init__.py
+│   │   ├── reload_config_base.py
+│   │   ├── runtime_config.py
+│   │   └── services
+│   │       ├── api_service.py
+│   │       ├── common_service.py
+│   │       ├── conversation_service.py
+│   │       ├── database.py
+│   │       ├── dialog_service.py
+│   │       ├── document_service.py
+│   │       ├── file2document_service.py
+│   │       ├── file_service.py
+│   │       ├── __init__.py
+│   │       ├── knowledgebase_service.py
+│   │       ├── llm_service.py
+│   │       ├── task_service.py
+│   │       ├── user_service.py
+│   │       └── write_service.py
+│   ├── __init__.py
+│   ├── ragflow_server.py
+│   ├── root_path.py
+│   ├── settings.py
+│   ├── utils
+│   │   ├── api_utils.py
+│   │   ├── commands.py
+│   │   ├── file_utils.py
+│   │   ├── __init__.py
+│   │   ├── log_utils.py
+│   │   ├── t_crypt.py
+│   │   └── web_utils.py
+│   ├── validation.py
+│   └── versions.py
+├── build_and_start.sh
+├── conf
+│   ├── infinity_mapping.json
+│   ├── llm_factories.json
+│   ├── mapping.json
+│   ├── private.pem
+│   ├── public.pem
+│   └── service_conf.yaml
+├── CONTRIBUTING.md
+├── debug_dialog_issue.py
+├── docker
+│   ├── create_agent_table.sql
+│   ├── docker-compose-base.yml
+│   ├── docker-compose_gpu.yml
+│   ├── docker-compose.yml
+│   ├── download_model.py
+│   ├── entrypoint-parser.sh
+│   ├── entrypoint.sh
+│   ├── infinity_conf.toml
+│   ├── init.sql
+│   ├── launch_backend_service.sh
+│   ├── magic-pdf-gpu.json
+│   ├── magic-pdf.json
+│   ├── nginx
+│   │   ├── management_nginx.conf
+│   │   ├── nginx.conf
+│   │   ├── proxy.conf
+│   │   └── ragflow.conf
+│   ├── ragflow-logs
+│   │   ├── ragflow_server.log
+│   │   ├── task_consumer_0.log
+│   │   └── task_consumer_0.log.1
+│   ├── ragflow-plus-logs
+│   │   └── parser.log
+│   └── service_conf.yaml.template
+├── Dockerfile
+├── docs
+│   ├── api
+│   │   └── README.md
+│   ├── blog
+│   │   └── README.md
+│   ├── build
+│   │   └── README.md
+│   ├── custom.css
+│   ├── images
+│   │   ├── favicon.ico
+│   │   ├── group.jpg
+│   │   ├── qrcode.jpg
+│   │   ├── ragflow-plus.png
+│   │   └── video-thumbnail.jpg
+│   ├── index.html
+│   ├── question
+│   │   └── README.md
+│   ├── quickstart
+│   │   ├── _images
+│   │   │   ├── image_1.png
+│   │   │   ├── image_2.png
+│   │   │   ├── image_3.png
+│   │   │   ├── image_4.png
+│   │   │   ├── image_5.png
+│   │   │   ├── image_6.png
+│   │   │   ├── image_7.png
+│   │   │   └── image_8.png
+│   │   └── README.md
+│   ├── README.md
+│   ├── _sidebar.md
+│   └── skill
+│       └── README.md
+├── fix_agent_table.sql
+├── graphrag
+│   ├── entity_resolution_prompt.py
+│   ├── entity_resolution.py
+│   ├── general
+│   │   ├── community_report_prompt.py
+│   │   ├── community_reports_extractor.py
+│   │   ├── entity_embedding.py
+│   │   ├── extractor.py
+│   │   ├── graph_extractor.py
+│   │   ├── graph_prompt.py
+│   │   ├── index.py
+│   │   ├── __init__.py
+│   │   ├── leiden.py
+│   │   ├── mind_map_extractor.py
+│   │   ├── mind_map_prompt.py
+│   │   └── smoke.py
+│   ├── __init__.py
+│   ├── light
+│   │   ├── graph_extractor.py
+│   │   ├── graph_prompt.py
+│   │   ├── __init__.py
+│   │   └── smoke.py
+│   ├── query_analyze_prompt.py
+│   ├── search.py
+│   └── utils.py
+├── LICENSE
+├── management
+│   ├── docker-compose.yml
+│   ├── Dockerfile
+│   ├── magic-pdf.json
+│   ├── models--hantian--layoutreader
+│   │   ├── config.json
+│   │   ├── model.safetensors
+│   │   ├── pytorch_model.bin
+│   │   └── README.md
+│   ├── models--opendatalab--PDF-Extract-Kit-1.0
+│   │   ├── models
+│   │   │   ├── Layout
+│   │   │   │   ├── LayoutLMv3
+│   │   │   │   │   ├── config.json
+│   │   │   │   │   └── model_final.pth
+│   │   │   │   └── YOLO
+│   │   │   │       ├── doclayout_yolo_docstructbench_imgsz1280_2501.pt
+│   │   │   │       ├── doclayout_yolo_ft.pt
+│   │   │   │       └── yolov10l_ft.pt
+│   │   │   ├── MFD
+│   │   │   │   └── YOLO
+│   │   │   │       └── yolo_v8_ft.pt
+│   │   │   ├── MFR
+│   │   │   │   ├── UniMERNet
+│   │   │   │   │   ├── config.json
+│   │   │   │   │   ├── preprocessor_config.json
+│   │   │   │   │   ├── pytorch_model.bin
+│   │   │   │   │   ├── README.md
+│   │   │   │   │   ├── tokenizer_config.json
+│   │   │   │   │   └── tokenizer.json
+│   │   │   │   ├── unimernet_base
+│   │   │   │   │   ├── config.json
+│   │   │   │   │   ├── configuration.json
+│   │   │   │   │   ├── preprocessor_config.json
+│   │   │   │   │   ├── pytorch_model.pth
+│   │   │   │   │   ├── README.md
+│   │   │   │   │   ├── tokenizer_config.json
+│   │   │   │   │   ├── tokenizer.json
+│   │   │   │   │   └── unimernet_base.yaml
+│   │   │   │   ├── unimernet_base_2501
+│   │   │   │   │   ├── config.json
+│   │   │   │   │   ├── configuration.json
+│   │   │   │   │   ├── preprocessor_config.json
+│   │   │   │   │   ├── pytorch_model.pth
+│   │   │   │   │   ├── README.md
+│   │   │   │   │   ├── tokenizer_config.json
+│   │   │   │   │   ├── tokenizer.json
+│   │   │   │   │   └── unimernet_base.yaml
+│   │   │   │   ├── unimernet_hf_small_2503
+│   │   │   │   │   ├── config.json
+│   │   │   │   │   ├── generation_config.json
+│   │   │   │   │   ├── model.safetensors
+│   │   │   │   │   ├── README.md
+│   │   │   │   │   ├── special_tokens_map.json
+│   │   │   │   │   ├── tokenizer_config.json
+│   │   │   │   │   └── tokenizer.json
+│   │   │   │   ├── unimernet_small
+│   │   │   │   │   ├── config.json
+│   │   │   │   │   ├── configuration.json
+│   │   │   │   │   ├── preprocessor_config.json
+│   │   │   │   │   ├── pytorch_model.pth
+│   │   │   │   │   ├── README.md
+│   │   │   │   │   ├── tokenizer_config.json
+│   │   │   │   │   ├── tokenizer.json
+│   │   │   │   │   └── unimernet_small.yaml
+│   │   │   │   ├── unimernet_small_2501
+│   │   │   │   │   ├── config.json
+│   │   │   │   │   ├── configuration.json
+│   │   │   │   │   ├── preprocessor_config.json
+│   │   │   │   │   ├── pytorch_model.pth
+│   │   │   │   │   ├── README.md
+│   │   │   │   │   ├── tokenizer_config.json
+│   │   │   │   │   ├── tokenizer.json
+│   │   │   │   │   └── unimernet_small.yaml
+│   │   │   │   └── unimernet_tiny
+│   │   │   │       ├── config.json
+│   │   │   │       ├── configuration.json
+│   │   │   │       ├── preprocessor_config.json
+│   │   │   │       ├── pytorch_model.pth
+│   │   │   │       ├── README.md
+│   │   │   │       ├── tokenizer_config.json
+│   │   │   │       ├── tokenizer.json
+│   │   │   │       └── unimernet_tiny.yaml
+│   │   │   ├── OCR
+│   │   │   │   ├── paddleocr
+│   │   │   │   │   └── whl
+│   │   │   │   │       ├── cls
+│   │   │   │   │       │   └── ch_ppocr_mobile_v2.0_cls_infer
+│   │   │   │   │       │       ├── inference.pdiparams
+│   │   │   │   │       │       ├── inference.pdiparams.info
+│   │   │   │   │       │       └── inference.pdmodel
+│   │   │   │   │       ├── det
+│   │   │   │   │       │   ├── ch
+│   │   │   │   │       │   │   └── ch_PP-OCRv4_det_infer
+│   │   │   │   │       │   │       ├── inference.pdiparams
+│   │   │   │   │       │   │       ├── inference.pdiparams.info
+│   │   │   │   │       │   │       └── inference.pdmodel
+│   │   │   │   │       │   ├── en
+│   │   │   │   │       │   │   └── en_PP-OCRv3_det_infer
+│   │   │   │   │       │   │       ├── inference.pdiparams
+│   │   │   │   │       │   │       ├── inference.pdiparams.info
+│   │   │   │   │       │   │       └── inference.pdmodel
+│   │   │   │   │       │   └── ml
+│   │   │   │   │       │       └── Multilingual_PP-OCRv3_det_infer
+│   │   │   │   │       │           ├── inference.pdiparams
+│   │   │   │   │       │           ├── inference.pdiparams.info
+│   │   │   │   │       │           └── inference.pdmodel
+│   │   │   │   │       └── rec
+│   │   │   │   │           ├── arabic
+│   │   │   │   │           │   └── arabic_PP-OCRv4_rec_infer
+│   │   │   │   │           │       ├── inference.pdiparams
+│   │   │   │   │           │       ├── inference.pdiparams.info
+│   │   │   │   │           │       └── inference.pdmodel
+│   │   │   │   │           ├── ch
+│   │   │   │   │           │   └── ch_PP-OCRv4_rec_infer
+│   │   │   │   │           │       ├── inference.pdiparams
+│   │   │   │   │           │       ├── inference.pdiparams.info
+│   │   │   │   │           │       └── inference.pdmodel
+│   │   │   │   │           ├── chinese_cht
+│   │   │   │   │           │   └── chinese_cht_PP-OCRv3_rec_infer
+│   │   │   │   │           │       ├── inference.pdiparams
+│   │   │   │   │           │       ├── inference.pdiparams.info
+│   │   │   │   │           │       └── inference.pdmodel
+│   │   │   │   │           ├── cyrillic
+│   │   │   │   │           │   └── cyrillic_PP-OCRv3_rec_infer
+│   │   │   │   │           │       ├── inference.pdiparams
+│   │   │   │   │           │       ├── inference.pdiparams.info
+│   │   │   │   │           │       └── inference.pdmodel
+│   │   │   │   │           ├── devanagari
+│   │   │   │   │           │   └── devanagari_PP-OCRv4_rec_infer
+│   │   │   │   │           │       ├── inference.pdiparams
+│   │   │   │   │           │       ├── inference.pdiparams.info
+│   │   │   │   │           │       └── inference.pdmodel
+│   │   │   │   │           ├── en
+│   │   │   │   │           │   └── en_PP-OCRv4_rec_infer
+│   │   │   │   │           │       ├── inference.pdiparams
+│   │   │   │   │           │       ├── inference.pdiparams.info
+│   │   │   │   │           │       └── inference.pdmodel
+│   │   │   │   │           ├── japan
+│   │   │   │   │           │   └── japan_PP-OCRv4_rec_infer
+│   │   │   │   │           │       ├── inference.pdiparams
+│   │   │   │   │           │       ├── inference.pdiparams.info
+│   │   │   │   │           │       └── inference.pdmodel
+│   │   │   │   │           ├── ka
+│   │   │   │   │           │   └── ka_PP-OCRv4_rec_infer
+│   │   │   │   │           │       ├── inference.pdiparams
+│   │   │   │   │           │       ├── inference.pdiparams.info
+│   │   │   │   │           │       └── inference.pdmodel
+│   │   │   │   │           ├── korean
+│   │   │   │   │           │   └── korean_PP-OCRv4_rec_infer
+│   │   │   │   │           │       ├── inference.pdiparams
+│   │   │   │   │           │       ├── inference.pdiparams.info
+│   │   │   │   │           │       └── inference.pdmodel
+│   │   │   │   │           ├── latin
+│   │   │   │   │           │   └── latin_PP-OCRv3_rec_infer
+│   │   │   │   │           │       ├── inference.pdiparams
+│   │   │   │   │           │       ├── inference.pdiparams.info
+│   │   │   │   │           │       └── inference.pdmodel
+│   │   │   │   │           ├── ta
+│   │   │   │   │           │   └── ta_PP-OCRv4_rec_infer
+│   │   │   │   │           │       ├── inference.pdiparams
+│   │   │   │   │           │       ├── inference.pdiparams.info
+│   │   │   │   │           │       └── inference.pdmodel
+│   │   │   │   │           └── te
+│   │   │   │   │               └── te_PP-OCRv4_rec_infer
+│   │   │   │   │                   ├── inference.pdiparams
+│   │   │   │   │                   ├── inference.pdiparams.info
+│   │   │   │   │                   └── inference.pdmodel
+│   │   │   │   ├── PaddleOCR
+│   │   │   │   │   ├── det
+│   │   │   │   │   │   └── ch_PP-OCRv4_det
+│   │   │   │   │   │       ├── inference.pdiparams
+│   │   │   │   │   │       ├── inference.pdiparams.info
+│   │   │   │   │   │       └── inference.pdmodel
+│   │   │   │   │   └── rec
+│   │   │   │   │       └── ch_PP-OCRv4_rec
+│   │   │   │   │           ├── inference.pdiparams
+│   │   │   │   │           ├── inference.pdiparams.info
+│   │   │   │   │           └── inference.pdmodel
+│   │   │   │   └── paddleocr_torch
+│   │   │   │       ├── arabic_PP-OCRv3_rec_infer.pth
+│   │   │   │       ├── chinese_cht_PP-OCRv3_rec_infer.pth
+│   │   │   │       ├── ch_PP-OCRv3_det_infer.pth
+│   │   │   │       ├── ch_PP-OCRv4_det_infer.pth
+│   │   │   │       ├── ch_PP-OCRv4_rec_infer.pth
+│   │   │   │       ├── ch_PP-OCRv4_rec_server_doc_infer.pth
+│   │   │   │       ├── ch_PP-OCRv4_rec_server_infer.pth
+│   │   │   │       ├── ch_PP-OCRv5_det_infer.pth
+│   │   │   │       ├── ch_PP-OCRv5_rec_infer.pth
+│   │   │   │       ├── ch_PP-OCRv5_rec_server_infer.pth
+│   │   │   │       ├── ch_ptocr_mobile_v2.0_cls_infer.pth
+│   │   │   │       ├── cyrillic_PP-OCRv3_rec_infer.pth
+│   │   │   │       ├── devanagari_PP-OCRv3_rec_infer.pth
+│   │   │   │       ├── el_PP-OCRv5_rec_infer.pth
+│   │   │   │       ├── en_PP-OCRv3_det_infer.pth
+│   │   │   │       ├── en_PP-OCRv4_rec_infer.pth
+│   │   │   │       ├── en_PP-OCRv5_rec_infer.pth
+│   │   │   │       ├── eslav_PP-OCRv5_rec_infer.pth
+│   │   │   │       ├── japan_PP-OCRv3_rec_infer.pth
+│   │   │   │       ├── ka_PP-OCRv3_rec_infer.pth
+│   │   │   │       ├── korean_PP-OCRv3_rec_infer.pth
+│   │   │   │       ├── korean_PP-OCRv5_rec_infer.pth
+│   │   │   │       ├── latin_PP-OCRv3_rec_infer.pth
+│   │   │   │       ├── latin_PP-OCRv5_rec_infer.pth
+│   │   │   │       ├── Multilingual_PP-OCRv3_det_infer.pth
+│   │   │   │       ├── ta_PP-OCRv3_rec_infer.pth
+│   │   │   │       ├── te_PP-OCRv3_rec_infer.pth
+│   │   │   │       └── th_PP-OCRv5_rec_infer.pth
+│   │   │   ├── OriCls
+│   │   │   │   └── paddle_orientation_classification
+│   │   │   │       └── PP-LCNet_x1_0_doc_ori.onnx
+│   │   │   ├── ReadingOrder
+│   │   │   │   └── layout_reader
+│   │   │   │       ├── config.json
+│   │   │   │       └── model.safetensors
+│   │   │   ├── README.md
+│   │   │   ├── TabCls
+│   │   │   │   └── paddle_table_cls
+│   │   │   │       └── PP-LCNet_x1_0_table_cls.onnx
+│   │   │   └── TabRec
+│   │   │       ├── SlanetPlus
+│   │   │       │   └── slanet-plus.onnx
+│   │   │       ├── StructEqTable
+│   │   │       │   ├── added_tokens.json
+│   │   │       │   ├── config.json
+│   │   │       │   ├── configuration_intern_vit.py
+│   │   │       │   ├── configuration_internvl_chat.py
+│   │   │       │   ├── conversation.py
+│   │   │       │   ├── generation_config.json
+│   │   │       │   ├── merges.txt
+│   │   │       │   ├── modeling_intern_vit.py
+│   │   │       │   ├── modeling_internvl_chat.py
+│   │   │       │   ├── model.safetensors
+│   │   │       │   ├── preprocessor_config.json
+│   │   │       │   ├── README.md
+│   │   │       │   ├── special_tokens_map.json
+│   │   │       │   ├── tokenizer_config.json
+│   │   │       │   └── vocab.json
+│   │   │       ├── TableMaster
+│   │   │       │   ├── ch_PP-OCRv4_det_infer
+│   │   │       │   │   ├── inference.pdiparams
+│   │   │       │   │   ├── inference.pdiparams.info
+│   │   │       │   │   └── inference.pdmodel
+│   │   │       │   ├── ch_PP-OCRv4_rec_infer
+│   │   │       │   │   ├── inference.pdiparams
+│   │   │       │   │   ├── inference.pdiparams.info
+│   │   │       │   │   └── inference.pdmodel
+│   │   │       │   ├── ppocr_keys_v1.txt
+│   │   │       │   ├── table_master_structure_dict.txt
+│   │   │       │   └── table_structure_tablemaster_infer
+│   │   │       │       ├── inference.pdiparams
+│   │   │       │       ├── inference.pdiparams.info
+│   │   │       │       └── inference.pdmodel
+│   │   │       └── UnetStructure
+│   │   │           └── unet.onnx
+│   │   └── README.md
+│   ├── models--slanet_plus
+│   │   └── slanet-plus.onnx
+│   ├── nginx.conf
+│   ├── nltk_data
+│   │   └── tokenizers
+│   │       ├── punkt
+│   │       │   ├── czech.pickle
+│   │       │   ├── danish.pickle
+│   │       │   ├── dutch.pickle
+│   │       │   ├── english.pickle
+│   │       │   ├── estonian.pickle
+│   │       │   ├── finnish.pickle
+│   │       │   ├── french.pickle
+│   │       │   ├── german.pickle
+│   │       │   ├── greek.pickle
+│   │       │   ├── italian.pickle
+│   │       │   ├── malayalam.pickle
+│   │       │   ├── norwegian.pickle
+│   │       │   ├── polish.pickle
+│   │       │   ├── portuguese.pickle
+│   │       │   ├── PY3
+│   │       │   │   ├── czech.pickle
+│   │       │   │   ├── danish.pickle
+│   │       │   │   ├── dutch.pickle
+│   │       │   │   ├── english.pickle
+│   │       │   │   ├── estonian.pickle
+│   │       │   │   ├── finnish.pickle
+│   │       │   │   ├── french.pickle
+│   │       │   │   ├── german.pickle
+│   │       │   │   ├── greek.pickle
+│   │       │   │   ├── italian.pickle
+│   │       │   │   ├── malayalam.pickle
+│   │       │   │   ├── norwegian.pickle
+│   │       │   │   ├── polish.pickle
+│   │       │   │   ├── portuguese.pickle
+│   │       │   │   ├── README
+│   │       │   │   ├── russian.pickle
+│   │       │   │   ├── slovene.pickle
+│   │       │   │   ├── spanish.pickle
+│   │       │   │   ├── swedish.pickle
+│   │       │   │   └── turkish.pickle
+│   │       │   ├── README
+│   │       │   ├── russian.pickle
+│   │       │   ├── slovene.pickle
+│   │       │   ├── spanish.pickle
+│   │       │   ├── swedish.pickle
+│   │       │   └── turkish.pickle
+│   │       └── punkt.zip
+│   ├── server
+│   │   ├── app.py
+│   │   ├── create_agent_table.py
+│   │   ├── database.py
+│   │   ├── requirements.txt
+│   │   ├── root_path.py
+│   │   ├── routes
+│   │   │   ├── agents
+│   │   │   │   ├── __init__.py
+│   │   │   │   └── routes.py
+│   │   │   ├── conversation
+│   │   │   │   ├── __init__.py
+│   │   │   │   └── routes.py
+│   │   │   ├── files
+│   │   │   │   └── routes.py
+│   │   │   ├── __init__.py
+│   │   │   ├── knowledgebases
+│   │   │   │   └── routes.py
+│   │   │   ├── teams
+│   │   │   │   ├── __init__.py
+│   │   │   │   └── routes.py
+│   │   │   ├── tenants
+│   │   │   │   ├── __init__.py
+│   │   │   │   └── routes.py
+│   │   │   └── users
+│   │   │       ├── __init__.py
+│   │   │       └── routes.py
+│   │   ├── scripts
+│   │   │   ├── clean_all_data.py
+│   │   │   ├── cleanup_minio_buckets.py
+│   │   │   ├── embedding_test.py
+│   │   │   ├── minio_test.py
+│   │   │   ├── ollama_test.py
+│   │   │   └── siliconflow_emb_test.py
+│   │   ├── services
+│   │   │   ├── agents
+│   │   │   │   └── service.py
+│   │   │   ├── conversation
+│   │   │   │   └── service.py
+│   │   │   ├── files
+│   │   │   │   ├── base_service.py
+│   │   │   │   ├── document_service.py
+│   │   │   │   ├── file2document_service.py
+│   │   │   │   ├── file_service.py
+│   │   │   │   ├── models
+│   │   │   │   │   └── __init__.py
+│   │   │   │   ├── service.py
+│   │   │   │   └── utils.py
+│   │   │   ├── knowledgebases
+│   │   │   │   ├── document_parser.py
+│   │   │   │   ├── excel_parser.py
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── rag_tokenizer.py
+│   │   │   │   ├── res
+│   │   │   │   │   └── huqie.txt.trie
+│   │   │   │   ├── service.py
+│   │   │   │   └── utils.py
+│   │   │   ├── teams
+│   │   │   │   ├── __init__.py
+│   │   │   │   └── service.py
+│   │   │   ├── tenants
+│   │   │   │   ├── __init__.py
+│   │   │   │   └── service.py
+│   │   │   └── users
+│   │   │       ├── __init__.py
+│   │   │       └── service.py
+│   │   └── utils.py
+│   └── web
+│       ├── eslint.config.js
+│       ├── index.html
+│       ├── package.json
+│       ├── pnpm-lock.yaml
+│       ├── public
+│       │   ├── app-loading.css
+│       │   ├── detect-ie.js
+│       │   └── favicon.ico
+│       ├── src
+│       │   ├── App.vue
+│       │   ├── common
+│       │   │   ├── apis
+│       │   │   │   ├── agents
+│       │   │   │   │   └── index.ts
+│       │   │   │   ├── configs
+│       │   │   │   │   ├── index.ts
+│       │   │   │   │   └── type.ts
+│       │   │   │   ├── files
+│       │   │   │   │   ├── index.ts
+│       │   │   │   │   ├── type.ts
+│       │   │   │   │   └── upload.ts
+│       │   │   │   ├── kbs
+│       │   │   │   │   ├── document.ts
+│       │   │   │   │   ├── knowledgebase.ts
+│       │   │   │   │   └── type.ts
+│       │   │   │   ├── tables
+│       │   │   │   │   ├── index.ts
+│       │   │   │   │   └── type.ts
+│       │   │   │   ├── teams
+│       │   │   │   │   ├── index.ts
+│       │   │   │   │   └── type.ts
+│       │   │   │   └── users
+│       │   │   │       ├── index.ts
+│       │   │   │       └── type.ts
+│       │   │   ├── assets
+│       │   │   │   ├── icons
+│       │   │   │   │   ├── conversation.svg
+│       │   │   │   │   ├── dashboard.svg
+│       │   │   │   │   ├── file.svg
+│       │   │   │   │   ├── fullscreen-exit.svg
+│       │   │   │   │   ├── fullscreen.svg
+│       │   │   │   │   ├── kb.svg
+│       │   │   │   │   ├── keyboard-down.svg
+│       │   │   │   │   ├── keyboard-enter.svg
+│       │   │   │   │   ├── keyboard-esc.svg
+│       │   │   │   │   ├── keyboard-up.svg
+│       │   │   │   │   ├── preserve-color
+│       │   │   │   │   │   └── README.md
+│       │   │   │   │   ├── search.svg
+│       │   │   │   │   ├── team-management.svg
+│       │   │   │   │   ├── user-config.svg
+│       │   │   │   │   └── user-management.svg
+│       │   │   │   ├── images
+│       │   │   │   │   └── layouts
+│       │   │   │   │       ├── logo.png
+│       │   │   │   │       ├── logo-text-1.png
+│       │   │   │   │       └── logo-text-2.png
+│       │   │   │   └── styles
+│       │   │   │       ├── element-plus.css
+│       │   │   │       ├── element-plus.scss
+│       │   │   │       ├── index.scss
+│       │   │   │       ├── mixins.scss
+│       │   │   │       ├── theme
+│       │   │   │       │   ├── core
+│       │   │   │       │   │   ├── element-plus.scss
+│       │   │   │       │   │   ├── index.scss
+│       │   │   │       │   │   └── layouts.scss
+│       │   │   │       │   ├── dark
+│       │   │   │       │   │   ├── index.scss
+│       │   │   │       │   │   └── variables.scss
+│       │   │   │       │   ├── dark-blue
+│       │   │   │       │   │   ├── index.scss
+│       │   │   │       │   │   └── variables.scss
+│       │   │   │       │   └── register.scss
+│       │   │   │       ├── transition.scss
+│       │   │   │       ├── variables.css
+│       │   │   │       ├── view-transition.scss
+│       │   │   │       ├── vxe-table.css
+│       │   │   │       └── vxe-table.scss
+│       │   │   ├── components
+│       │   │   │   ├── Notify
+│       │   │   │   │   ├── data.ts
+│       │   │   │   │   ├── index.vue
+│       │   │   │   │   ├── List.vue
+│       │   │   │   │   └── type.ts
+│       │   │   │   ├── Screenfull
+│       │   │   │   │   └── index.vue
+│       │   │   │   ├── SearchMenu
+│       │   │   │   │   ├── Footer.vue
+│       │   │   │   │   ├── index.vue
+│       │   │   │   │   ├── Modal.vue
+│       │   │   │   │   └── Result.vue
+│       │   │   │   └── ThemeSwitch
+│       │   │   │       └── index.vue
+│       │   │   ├── composables
+│       │   │   │   ├── useDevice.ts
+│       │   │   │   ├── useFetchSelect.ts
+│       │   │   │   ├── useFileUpload.ts
+│       │   │   │   ├── useFullscreenLoading.ts
+│       │   │   │   ├── useGreyAndColorWeakness.ts
+│       │   │   │   ├── useLayoutMode.ts
+│       │   │   │   ├── usePagination.ts
+│       │   │   │   ├── usePany.ts
+│       │   │   │   ├── useRouteListener.ts
+│       │   │   │   ├── useTheme.ts
+│       │   │   │   ├── useTitle.ts
+│       │   │   │   └── useWatermark.ts
+│       │   │   ├── constants
+│       │   │   │   ├── app-key.ts
+│       │   │   │   └── cache-key.ts
+│       │   │   └── utils
+│       │   │       ├── cache
+│       │   │       │   ├── cookies.ts
+│       │   │       │   └── local-storage.ts
+│       │   │       ├── css.ts
+│       │   │       ├── datetime.ts
+│       │   │       ├── permission.ts
+│       │   │       └── validate.ts
+│       │   ├── components
+│       │   │   ├── FileTree.vue
+│       │   │   ├── FolderSelector.vue
+│       │   │   └── KnowledgeBaseTree.vue
+│       │   ├── http
+│       │   │   ├── axios.ts
+│       │   │   └── upload-axios.ts
+│       │   ├── layouts
+│       │   │   ├── components
+│       │   │   │   ├── AppMain
+│       │   │   │   │   └── index.vue
+│       │   │   │   ├── Breadcrumb
+│       │   │   │   │   └── index.vue
+│       │   │   │   ├── DocumentParseProgress
+│       │   │   │   │   └── index.vue
+│       │   │   │   ├── Footer
+│       │   │   │   │   └── index.vue
+│       │   │   │   ├── Hamburger
+│       │   │   │   │   └── index.vue
+│       │   │   │   ├── index.ts
+│       │   │   │   ├── Logo
+│       │   │   │   │   └── index.vue
+│       │   │   │   ├── NavigationBar
+│       │   │   │   │   └── index.vue
+│       │   │   │   ├── RightPanel
+│       │   │   │   │   └── index.vue
+│       │   │   │   ├── Settings
+│       │   │   │   │   ├── index.vue
+│       │   │   │   │   └── SelectLayoutMode.vue
+│       │   │   │   ├── Sidebar
+│       │   │   │   │   ├── index.vue
+│       │   │   │   │   ├── Item.vue
+│       │   │   │   │   └── Link.vue
+│       │   │   │   └── TagsView
+│       │   │   │       ├── index.vue
+│       │   │   │       └── ScrollPane.vue
+│       │   │   ├── composables
+│       │   │   │   └── useResize.ts
+│       │   │   ├── config.ts
+│       │   │   ├── index.vue
+│       │   │   └── modes
+│       │   │       ├── LeftMode.vue
+│       │   │       ├── LeftTopMode.vue
+│       │   │       └── TopMode.vue
+│       │   ├── main.ts
+│       │   ├── pages
+│       │   │   ├── agent
+│       │   │   │   └── index.vue
+│       │   │   ├── conversation
+│       │   │   │   └── index.vue
+│       │   │   ├── dashboard
+│       │   │   │   ├── components
+│       │   │   │   │   ├── Admin.vue
+│       │   │   │   │   └── Editor.vue
+│       │   │   │   ├── images
+│       │   │   │   │   └── dashboard.svg
+│       │   │   │   └── index.vue
+│       │   │   ├── error
+│       │   │   │   ├── 403.vue
+│       │   │   │   ├── 404.vue
+│       │   │   │   ├── components
+│       │   │   │   │   └── Layout.vue
+│       │   │   │   └── images
+│       │   │   │       ├── 403.svg
+│       │   │   │       └── 404.svg
+│       │   │   ├── file
+│       │   │   │   └── index.vue
+│       │   │   ├── knowledgebase
+│       │   │   │   └── index.vue
+│       │   │   ├── login
+│       │   │   │   ├── apis
+│       │   │   │   │   ├── index.ts
+│       │   │   │   │   └── type.ts
+│       │   │   │   ├── components
+│       │   │   │   │   └── Owl.vue
+│       │   │   │   ├── composables
+│       │   │   │   │   └── useFocus.ts
+│       │   │   │   ├── images
+│       │   │   │   │   ├── close-eyes.png
+│       │   │   │   │   ├── face.png
+│       │   │   │   │   ├── hand-down-left.png
+│       │   │   │   │   ├── hand-down-right.png
+│       │   │   │   │   ├── hand-up-left.png
+│       │   │   │   │   └── hand-up-right.png
+│       │   │   │   └── index.vue
+│       │   │   ├── redirect
+│       │   │   │   └── index.vue
+│       │   │   ├── team-management
+│       │   │   │   └── index.vue
+│       │   │   ├── user-config
+│       │   │   │   └── index.vue
+│       │   │   └── user-management
+│       │   │       └── index.vue
+│       │   ├── pinia
+│       │   │   ├── index.ts
+│       │   │   └── stores
+│       │   │       ├── app.ts
+│       │   │       ├── permission.ts
+│       │   │       ├── settings.ts
+│       │   │       ├── tags-view.ts
+│       │   │       └── user.ts
+│       │   ├── plugins
+│       │   │   ├── element-plus-icons.ts
+│       │   │   ├── index.ts
+│       │   │   ├── permission-directive.ts
+│       │   │   ├── svg-icon.ts
+│       │   │   └── vxe-table.ts
+│       │   └── router
+│       │       ├── config.ts
+│       │       ├── guard.ts
+│       │       ├── helper.ts
+│       │       ├── index.ts
+│       │       └── whitelist.ts
+│       ├── tests
+│       │   ├── components
+│       │   │   └── Notify.test.ts
+│       │   ├── demo.test.ts
+│       │   └── utils
+│       │       └── validate.test.ts
+│       ├── tsconfig.json
+│       ├── types
+│       │   ├── api.d.ts
+│       │   ├── auto
+│       │   │   ├── auto-imports.d.ts
+│       │   │   ├── components.d.ts
+│       │   │   ├── svg-component.d.ts
+│       │   │   └── svg-component-global.d.ts
+│       │   ├── directives.d.ts
+│       │   ├── env.d.ts
+│       │   └── vue-router.d.ts
+│       ├── uno.config.ts
+│       └── vite.config.ts
+├── pyproject.toml
+├── rag
+│   ├── app
+│   │   ├── qa.py
+│   │   ├── resume.py
+│   │   └── tag.py
+│   ├── benchmark.py
+│   ├── __init__.py
+│   ├── llm
+│   │   ├── chat_model.py
+│   │   ├── cv_model.py
+│   │   ├── embedding_model.py
+│   │   ├── __init__.py
+│   │   ├── rerank_model.py
+│   │   ├── sequence2txt_model.py
+│   │   └── tts_model.py
+│   ├── nlp
+│   │   ├── __init__.py
+│   │   ├── query.py
+│   │   ├── rag_tokenizer.py
+│   │   ├── search.py
+│   │   ├── surname.py
+│   │   ├── synonym.py
+│   │   └── term_weight.py
+│   ├── prompts.py
+│   ├── raptor.py
+│   ├── res
+│   │   ├── huqie.txt
+│   │   ├── huqie.txt.trie
+│   │   ├── ner.json
+│   │   └── synonym.json
+│   ├── settings.py
+│   ├── svr
+│   │   ├── cache_file_svr.py
+│   │   ├── discord_svr.py
+│   │   ├── jina_server.py
+│   │   └── task_executor.py
+│   └── utils
+│       ├── azure_sas_conn.py
+│       ├── azure_spn_conn.py
+│       ├── doc_store_conn.py
+│       ├── es_conn.py
+│       ├── infinity_conn.py
+│       ├── __init__.py
+│       ├── minio_conn.py
+│       ├── oss_conn.py
+│       ├── redis_conn.py
+│       ├── s3_conn.py
+│       ├── storage_factory.py
+│       └── tavily_conn.py
+├── README_EN.md
+├── README.md
+├── rebuild_and_up.bat
+├── requirements.txt
+├── sdk
+│   └── python
+│       ├── hello_ragflow.py
+│       ├── pyproject.toml
+│       ├── ragflow_sdk
+│       │   ├── __init__.py
+│       │   ├── modules
+│       │   │   ├── base.py
+│       │   │   ├── chat.py
+│       │   │   ├── chunk.py
+│       │   │   ├── dataset.py
+│       │   │   ├── document.py
+│       │   │   ├── __init__.py
+│       │   │   └── session.py
+│       │   └── ragflow.py
+│       ├── README.md
+│       ├── test
+│       │   ├── conftest.py
+│       │   ├── libs
+│       │   │   ├── auth.py
+│       │   │   ├── __init__.py
+│       │   │   └── utils
+│       │   │       ├── file_utils.py
+│       │   │       └── __init__.py
+│       │   ├── test_frontend_api
+│       │   │   ├── common.py
+│       │   │   ├── get_email.py
+│       │   │   ├── test_chunk.py
+│       │   │   └── test_dataset.py
+│       │   ├── test_http_api
+│       │   │   ├── common.py
+│       │   │   ├── conftest.py
+│       │   │   ├── test_dataset_mangement
+│       │   │   │   ├── test_create_dataset.py
+│       │   │   │   ├── test_delete_dataset.py
+│       │   │   │   ├── test_list_dataset.py
+│       │   │   │   └── test_update_dataset.py
+│       │   │   └── test_file_management_within_dataset
+│       │   │       └── test_upload_documents.py
+│       │   └── test_sdk_api
+│       │       ├── common.py
+│       │       ├── get_email.py
+│       │       ├── t_chat.py
+│       │       ├── t_chunk.py
+│       │       ├── t_dataset.py
+│       │       ├── t_document.py
+│       │       ├── test_data
+│       │       │   ├── ragflow_test.txt
+│       │       │   ├── ragflow.txt
+│       │       │   ├── test.docx
+│       │       │   ├── test.html
+│       │       │   ├── test.jpg
+│       │       │   ├── test.json
+│       │       │   ├── test.md
+│       │       │   ├── test.pdf
+│       │       │   ├── test.ppt
+│       │       │   ├── test.txt
+│       │       │   └── test.xlsx
+│       │       └── t_session.py
+│       └── uv.lock
+├── test
+│   └── test_agent_create.py
+├── util
+│   ├── check_minio.py
+│   ├── cleanup_database.sql
+│   ├── cleanup_elasticsearch.py
+│   ├── cleanup_minio.py
+│   ├── CLEANUP_README.md
+│   ├── cleanup_redis.py
+│   ├── complete_cleanup.py
+│   ├── config_loader.py
+│   ├── __pycache__
+│   │   └── config_loader.cpython-312.pyc
+│   └── run_cleanup.py
+└── web
+    ├── externals.d.ts
+    ├── jest.config.ts
+    ├── jest-setup.ts
+    ├── package.json
+    ├── package-lock.json
+    ├── pnpm-lock.yaml
+    ├── public
+    │   ├── logo.svg
+    │   └── pdfjs-dist
+    │       └── pdf.worker.min.js
+    ├── src
+    │   ├── app.tsx
+    │   ├── assets
+    │   │   ├── banner.png
+    │   │   ├── filter.svg
+    │   │   ├── icon
+    │   │   │   └── Icon.tsx
+    │   │   ├── inter
+    │   │   │   ├── Inter-BlackItalic.woff2
+    │   │   │   ├── Inter-Black.woff2
+    │   │   │   ├── Inter-BoldItalic.woff2
+    │   │   │   ├── Inter-Bold.woff2
+    │   │   │   ├── InterDisplay-BlackItalic.woff2
+    │   │   │   ├── InterDisplay-Black.woff2
+    │   │   │   ├── InterDisplay-BoldItalic.woff2
+    │   │   │   ├── InterDisplay-Bold.woff2
+    │   │   │   ├── InterDisplay-ExtraBoldItalic.woff2
+    │   │   │   ├── InterDisplay-ExtraBold.woff2
+    │   │   │   ├── InterDisplay-ExtraLightItalic.woff2
+    │   │   │   ├── InterDisplay-ExtraLight.woff2
+    │   │   │   ├── InterDisplay-Italic.woff2
+    │   │   │   ├── InterDisplay-LightItalic.woff2
+    │   │   │   ├── InterDisplay-Light.woff2
+    │   │   │   ├── InterDisplay-MediumItalic.woff2
+    │   │   │   ├── InterDisplay-Medium.woff2
+    │   │   │   ├── InterDisplay-Regular.woff2
+    │   │   │   ├── InterDisplay-SemiBoldItalic.woff2
+    │   │   │   ├── InterDisplay-SemiBold.woff2
+    │   │   │   ├── InterDisplay-ThinItalic.woff2
+    │   │   │   ├── InterDisplay-Thin.woff2
+    │   │   │   ├── Inter-ExtraBoldItalic.woff2
+    │   │   │   ├── Inter-ExtraBold.woff2
+    │   │   │   ├── Inter-ExtraLightItalic.woff2
+    │   │   │   ├── Inter-ExtraLight.woff2
+    │   │   │   ├── Inter-Italic.woff2
+    │   │   │   ├── Inter-LightItalic.woff2
+    │   │   │   ├── Inter-Light.woff2
+    │   │   │   ├── Inter-MediumItalic.woff2
+    │   │   │   ├── Inter-Medium.woff2
+    │   │   │   ├── Inter-Regular.woff2
+    │   │   │   ├── Inter-SemiBoldItalic.woff2
+    │   │   │   ├── Inter-SemiBold.woff2
+    │   │   │   ├── Inter-ThinItalic.woff2
+    │   │   │   ├── Inter-Thin.woff2
+    │   │   │   ├── InterVariable-Italic.woff2
+    │   │   │   └── InterVariable.woff2
+    │   │   ├── logo-with-text.png
+    │   │   ├── svg
+    │   │   │   ├── akshare.svg
+    │   │   │   ├── api.svg
+    │   │   │   ├── arxiv.svg
+    │   │   │   ├── assistant.svg
+    │   │   │   ├── baidu-fanyi.svg
+    │   │   │   ├── baidu.svg
+    │   │   │   ├── begin.svg
+    │   │   │   ├── bing.svg
+    │   │   │   ├── cancel.svg
+    │   │   │   ├── chat-app-cube.svg
+    │   │   │   ├── chat-configuration-atom.svg
+    │   │   │   ├── chat-star.svg
+    │   │   │   ├── chunk-method
+    │   │   │   │   ├── book-01.svg
+    │   │   │   │   ├── book-02.svg
+    │   │   │   │   ├── book-03.svg
+    │   │   │   │   ├── book-04.svg
+    │   │   │   │   ├── chunk-empty.svg
+    │   │   │   │   ├── knowledge-graph-01.svg
+    │   │   │   │   ├── knowledge-graph-02.svg
+    │   │   │   │   ├── law-01.svg
+    │   │   │   │   ├── law-02.svg
+    │   │   │   │   ├── manual-01.svg
+    │   │   │   │   ├── manual-02.svg
+    │   │   │   │   ├── manual-03.svg
+    │   │   │   │   ├── manual-04.svg
+    │   │   │   │   ├── media-01.svg
+    │   │   │   │   ├── media-02.svg
+    │   │   │   │   ├── naive-01.svg
+    │   │   │   │   ├── naive-02.svg
+    │   │   │   │   ├── one-01.svg
+    │   │   │   │   ├── one-02.svg
+    │   │   │   │   ├── one-03.svg
+    │   │   │   │   ├── one-04.svg
+    │   │   │   │   ├── paper-01.svg
+    │   │   │   │   ├── paper-02.svg
+    │   │   │   │   ├── presentation-01.svg
+    │   │   │   │   ├── presentation-02.svg
+    │   │   │   │   ├── qa-01.svg
+    │   │   │   │   ├── qa-02.svg
+    │   │   │   │   ├── resume-01.svg
+    │   │   │   │   ├── resume-02.svg
+    │   │   │   │   ├── table-01.svg
+    │   │   │   │   ├── table-02.svg
+    │   │   │   │   ├── tag-01.svg
+    │   │   │   │   └── tag-02.svg
+    │   │   │   ├── concentrator.svg
+    │   │   │   ├── crawler.svg
+    │   │   │   ├── database.svg
+    │   │   │   ├── deepl.svg
+    │   │   │   ├── delete.svg
+    │   │   │   ├── disable.svg
+    │   │   │   ├── duck.svg
+    │   │   │   ├── email.svg
+    │   │   │   ├── enable.svg
+    │   │   │   ├── es.svg
+    │   │   │   ├── exesql.svg
+    │   │   │   ├── file-icon
+    │   │   │   │   ├── aep.svg
+    │   │   │   │   ├── ai.svg
+    │   │   │   │   ├── avi.svg
+    │   │   │   │   ├── css.svg
+    │   │   │   │   ├── csv.svg
+    │   │   │   │   ├── dmg.svg
+    │   │   │   │   ├── doc.svg
+    │   │   │   │   ├── docx.svg
+    │   │   │   │   ├── eps.svg
+    │   │   │   │   ├── exe.svg
+    │   │   │   │   ├── fig.svg
+    │   │   │   │   ├── folder.svg
+    │   │   │   │   ├── gif.svg
+    │   │   │   │   ├── html.svg
+    │   │   │   │   ├── indd.svg
+    │   │   │   │   ├── java.svg
+    │   │   │   │   ├── jpeg.svg
+    │   │   │   │   ├── jpg.svg
+    │   │   │   │   ├── json.svg
+    │   │   │   │   ├── js.svg
+    │   │   │   │   ├── md.svg
+    │   │   │   │   ├── mkv.svg
+    │   │   │   │   ├── mp3.svg
+    │   │   │   │   ├── mp4.svg
+    │   │   │   │   ├── mpeg.svg
+    │   │   │   │   ├── pdf.svg
+    │   │   │   │   ├── png.svg
+    │   │   │   │   ├── ppt.svg
+    │   │   │   │   ├── pptx.svg
+    │   │   │   │   ├── psd.svg
+    │   │   │   │   ├── rss.svg
+    │   │   │   │   ├── sql.svg
+    │   │   │   │   ├── svg.svg
+    │   │   │   │   ├── tiff.svg
+    │   │   │   │   ├── txt.svg
+    │   │   │   │   ├── wav.svg
+    │   │   │   │   ├── webp.svg
+    │   │   │   │   ├── xls.svg
+    │   │   │   │   ├── xlsx.svg
+    │   │   │   │   └── xml.svg
+    │   │   │   ├── file-management.svg
+    │   │   │   ├── github.svg
+    │   │   │   ├── google-scholar.svg
+    │   │   │   ├── google.svg
+    │   │   │   ├── graph.svg
+    │   │   │   ├── invoke-ai.svg
+    │   │   │   ├── jin10.svg
+    │   │   │   ├── keyword.svg
+    │   │   │   ├── knowledge-base.svg
+    │   │   │   ├── knowledge-configration.svg
+    │   │   │   ├── knowledge-dataset.svg
+    │   │   │   ├── knowledge-images.svg
+    │   │   │   ├── knowledge-testing.svg
+    │   │   │   ├── llm
+    │   │   │   │   ├── anthropic.svg
+    │   │   │   │   ├── azure.svg
+    │   │   │   │   ├── baai.svg
+    │   │   │   │   ├── baichuan.svg
+    │   │   │   │   ├── bedrock.svg
+    │   │   │   │   ├── chat-minimax.svg
+    │   │   │   │   ├── cohere.svg
+    │   │   │   │   ├── deepseek.svg
+    │   │   │   │   ├── fish-audio.svg
+    │   │   │   │   ├── gemini.svg
+    │   │   │   │   ├── github.svg
+    │   │   │   │   ├── google-cloud.svg
+    │   │   │   │   ├── google.svg
+    │   │   │   │   ├── gpustack.svg
+    │   │   │   │   ├── groq-next.svg
+    │   │   │   │   ├── huggingface.svg
+    │   │   │   │   ├── hunyuan.svg
+    │   │   │   │   ├── jina.svg
+    │   │   │   │   ├── lepton-ai.svg
+    │   │   │   │   ├── lm-studio.svg
+    │   │   │   │   ├── local-ai.svg
+    │   │   │   │   ├── mistral.svg
+    │   │   │   │   ├── modelscope.svg
+    │   │   │   │   ├── moonshot.svg
+    │   │   │   │   ├── nomic-ai.svg
+    │   │   │   │   ├── novita-ai.svg
+    │   │   │   │   ├── nvidia.svg
+    │   │   │   │   ├── ollama.svg
+    │   │   │   │   ├── openai-api.svg
+    │   │   │   │   ├── openai.svg
+    │   │   │   │   ├── open-router.svg
+    │   │   │   │   ├── perfx-cloud.svg
+    │   │   │   │   ├── ppio.svg
+    │   │   │   │   ├── replicate.svg
+    │   │   │   │   ├── sentence-transformers.svg
+    │   │   │   │   ├── siliconflow.svg
+    │   │   │   │   ├── spark.svg
+    │   │   │   │   ├── stepfun.svg
+    │   │   │   │   ├── tencent-cloud.svg
+    │   │   │   │   ├── together-ai.svg
+    │   │   │   │   ├── tongyi.svg
+    │   │   │   │   ├── upstage.svg
+    │   │   │   │   ├── vllm.svg
+    │   │   │   │   ├── volc_engine.svg
+    │   │   │   │   ├── voyage.svg
+    │   │   │   │   ├── wenxin.svg
+    │   │   │   │   ├── xinference.svg
+    │   │   │   │   ├── yi.svg
+    │   │   │   │   ├── yiyan.svg
+    │   │   │   │   ├── youdao.svg
+    │   │   │   │   └── zhipu.svg
+    │   │   │   ├── login-avatars.svg
+    │   │   │   ├── login-background.jpg
+    │   │   │   ├── login-star.svg
+    │   │   │   ├── logout.svg
+    │   │   │   ├── minio.svg
+    │   │   │   ├── model-providers.svg
+    │   │   │   ├── moon.svg
+    │   │   │   ├── more-model.svg
+    │   │   │   ├── more.svg
+    │   │   │   ├── move.svg
+    │   │   │   ├── mysql.svg
+    │   │   │   ├── navigation-pointer.svg
+    │   │   │   ├── next-login-bg.svg
+    │   │   │   ├── note.svg
+    │   │   │   ├── nothing.svg
+    │   │   │   ├── paper-clip.svg
+    │   │   │   ├── password.svg
+    │   │   │   ├── plus-circle-fill.svg
+    │   │   │   ├── plus.svg
+    │   │   │   ├── profile.svg
+    │   │   │   ├── prompt.svg
+    │   │   │   ├── pubmed.svg
+    │   │   │   ├── qweather.svg
+    │   │   │   ├── redis.svg
+    │   │   │   ├── refresh.svg
+    │   │   │   ├── resize.svg
+    │   │   │   ├── run.svg
+    │   │   │   ├── selected-files-collapse.svg
+    │   │   │   ├── select-files-end.svg
+    │   │   │   ├── select-files-start.svg
+    │   │   │   ├── storage.svg
+    │   │   │   ├── switch.svg
+    │   │   │   ├── team.svg
+    │   │   │   ├── template.svg
+    │   │   │   ├── translation.svg
+    │   │   │   ├── tushare.svg
+    │   │   │   ├── wencai.svg
+    │   │   │   ├── wikipedia.svg
+    │   │   │   ├── write.svg
+    │   │   │   └── yahoo-finance.svg
+    │   │   └── yay.jpg
+    │   ├── base.ts
+    │   ├── components
+    │   │   ├── api-service
+    │   │   │   ├── chat-api-key-modal
+    │   │   │   │   └── index.tsx
+    │   │   │   ├── chat-overview-modal
+    │   │   │   │   ├── api-content.tsx
+    │   │   │   │   ├── backend-service-api.tsx
+    │   │   │   │   ├── index.less
+    │   │   │   │   ├── index.tsx
+    │   │   │   │   ├── markdown-toc.tsx
+    │   │   │   │   └── stats-chart.tsx
+    │   │   │   ├── embed-modal
+    │   │   │   │   ├── index.less
+    │   │   │   │   └── index.tsx
+    │   │   │   └── hooks.ts
+    │   │   ├── auto-keywords-item.tsx
+    │   │   ├── chat-input.tsx
+    │   │   ├── chunk_image
+    │   │   │   ├── index.less
+    │   │   │   └── index.tsx
+    │   │   ├── chunk-method-dialog
+    │   │   │   ├── hooks.ts
+    │   │   │   └── index.tsx
+    │   │   ├── chunk-method-modal
+    │   │   │   ├── hooks.ts
+    │   │   │   ├── index.less
+    │   │   │   └── index.tsx
+    │   │   ├── confirm-delete-dialog.tsx
+    │   │   ├── copy-to-clipboard.tsx
+    │   │   ├── dataset-configuration-container.tsx
+    │   │   ├── delimiter.tsx
+    │   │   ├── editable-cell.tsx
+    │   │   ├── edit-tag
+    │   │   │   ├── index.less
+    │   │   │   └── index.tsx
+    │   │   ├── entity-types-item.tsx
+    │   │   ├── excel-to-html.tsx
+    │   │   ├── file-icon
+    │   │   │   ├── index.less
+    │   │   │   └── index.tsx
+    │   │   ├── file-upload-dialog
+    │   │   │   └── index.tsx
+    │   │   ├── file-uploader.tsx
+    │   │   ├── file-upload-modal
+    │   │   │   ├── index.less
+    │   │   │   └── index.tsx
+    │   │   ├── highlight-markdown
+    │   │   │   ├── index.less
+    │   │   │   └── index.tsx
+    │   │   ├── hooks
+    │   │   │   ├── use-mobile.tsx
+    │   │   │   └── use-toast.tsx
+    │   │   ├── image
+    │   │   │   ├── index.less
+    │   │   │   └── index.tsx
+    │   │   ├── indented-tree
+    │   │   │   ├── indented-tree.tsx
+    │   │   │   └── modal.tsx
+    │   │   ├── knowledge-base-item.tsx
+    │   │   ├── large-model-form-field.tsx
+    │   │   ├── layout-recognize.tsx
+    │   │   ├── line-chart
+    │   │   │   └── index.tsx
+    │   │   ├── list-filter-bar.tsx
+    │   │   ├── llm-select
+    │   │   │   ├── index.less
+    │   │   │   ├── index.tsx
+    │   │   │   └── llm-label.tsx
+    │   │   ├── llm-setting-items
+    │   │   │   ├── index.less
+    │   │   │   ├── index.tsx
+    │   │   │   └── next.tsx
+    │   │   ├── max-token-number.tsx
+    │   │   ├── message-history-window-size-item.tsx
+    │   │   ├── message-input
+    │   │   │   ├── index.less
+    │   │   │   └── index.tsx
+    │   │   ├── message-item
+    │   │   │   ├── feedback-modal.tsx
+    │   │   │   ├── group-button.tsx
+    │   │   │   ├── hooks.ts
+    │   │   │   ├── index.less
+    │   │   │   ├── index.tsx
+    │   │   │   └── prompt-modal.tsx
+    │   │   ├── modal-manager.tsx
+    │   │   ├── new-document-link.tsx
+    │   │   ├── operate-dropdown
+    │   │   │   ├── index.less
+    │   │   │   └── index.tsx
+    │   │   ├── page-header.tsx
+    │   │   ├── page-rank.tsx
+    │   │   ├── parse-configuration
+    │   │   │   ├── graph-rag-items.tsx
+    │   │   │   └── index.tsx
+    │   │   ├── pdf-drawer
+    │   │   │   ├── hooks.ts
+    │   │   │   └── index.tsx
+    │   │   ├── pdf-previewer
+    │   │   │   ├── hooks.ts
+    │   │   │   ├── index.less
+    │   │   │   └── index.tsx
+    │   │   ├── prompt-editor
+    │   │   │   ├── constant.ts
+    │   │   │   ├── index.css
+    │   │   │   ├── index.tsx
+    │   │   │   ├── theme.ts
+    │   │   │   ├── variable-node.tsx
+    │   │   │   ├── variable-on-change-plugin.tsx
+    │   │   │   └── variable-picker-plugin.tsx
+    │   │   ├── rename-dialog
+    │   │   │   ├── index.tsx
+    │   │   │   └── rename-form.tsx
+    │   │   ├── rename-modal
+    │   │   │   └── index.tsx
+    │   │   ├── rerank.tsx
+    │   │   ├── retrieval-documents
+    │   │   │   ├── index.less
+    │   │   │   ├── index.tsx
+    │   │   │   └── select-files.tsx
+    │   │   ├── similarity-slider
+    │   │   │   └── index.tsx
+    │   │   ├── skeleton-card.tsx
+    │   │   ├── svg-icon.tsx
+    │   │   ├── switch-fom-field.tsx
+    │   │   ├── table-skeleton.tsx
+    │   │   ├── tavily-item.tsx
+    │   │   ├── theme-provider.tsx
+    │   │   ├── top-n-item.tsx
+    │   │   ├── ui
+    │   │   │   ├── alert-dialog.tsx
+    │   │   │   ├── aspect-ratio.tsx
+    │   │   │   ├── avatar.tsx
+    │   │   │   ├── badge.tsx
+    │   │   │   ├── breadcrumb.tsx
+    │   │   │   ├── button.tsx
+    │   │   │   ├── card.tsx
+    │   │   │   ├── checkbox.tsx
+    │   │   │   ├── collapsible.tsx
+    │   │   │   ├── command.tsx
+    │   │   │   ├── container.tsx
+    │   │   │   ├── dialog.tsx
+    │   │   │   ├── dropdown-menu.tsx
+    │   │   │   ├── dual-range-slider.tsx
+    │   │   │   ├── form.tsx
+    │   │   │   ├── input-otp.tsx
+    │   │   │   ├── input.tsx
+    │   │   │   ├── label.tsx
+    │   │   │   ├── loading-button.tsx
+    │   │   │   ├── multi-select.tsx
+    │   │   │   ├── navigation-menu.tsx
+    │   │   │   ├── popover.tsx
+    │   │   │   ├── progress.tsx
+    │   │   │   ├── scroll-area.tsx
+    │   │   │   ├── segmented.tsx
+    │   │   │   ├── select.tsx
+    │   │   │   ├── separator.tsx
+    │   │   │   ├── sheet.tsx
+    │   │   │   ├── sidebar.tsx
+    │   │   │   ├── skeleton.tsx
+    │   │   │   ├── slider.tsx
+    │   │   │   ├── switch.tsx
+    │   │   │   ├── table.tsx
+    │   │   │   ├── tabs.tsx
+    │   │   │   ├── textarea.tsx
+    │   │   │   ├── toaster.tsx
+    │   │   │   ├── toast.tsx
+    │   │   │   ├── tooltip.tsx
+    │   │   │   └── transfer-list.tsx
+    │   │   └── use-knowledge-graph-item.tsx
+    │   ├── conf.json
+    │   ├── constants
+    │   │   ├── authorization.ts
+    │   │   ├── chat.ts
+    │   │   ├── common.ts
+    │   │   ├── knowledge.ts
+    │   │   ├── llm.ts
+    │   │   └── setting.ts
+    │   ├── global.less
+    │   ├── hooks
+    │   │   ├── auth-hooks.ts
+    │   │   ├── chat-font-hooks.ts
+    │   │   ├── chat-hooks.ts
+    │   │   ├── chunk-hooks.ts
+    │   │   ├── common-hooks.tsx
+    │   │   ├── document-hooks.ts
+    │   │   ├── file-manager-hooks.ts
+    │   │   ├── knowledge-hooks.ts
+    │   │   ├── llm-hooks.tsx
+    │   │   ├── logic-hooks
+    │   │   │   └── navigate-hooks.ts
+    │   │   ├── logic-hooks.ts
+    │   │   ├── login-hooks.ts
+    │   │   ├── route-hook.ts
+    │   │   ├── temp-file-hooks.ts
+    │   │   ├── use-callback-ref.ts
+    │   │   ├── use-controllable-state.ts
+    │   │   ├── user-setting-hooks.tsx
+    │   │   └── write-hooks.ts
+    │   ├── icons
+    │   │   ├── github.svg
+    │   │   └── google.svg
+    │   ├── interfaces
+    │   │   ├── common.ts
+    │   │   ├── database
+    │   │   │   ├── base.ts
+    │   │   │   ├── chat.ts
+    │   │   │   ├── document.ts
+    │   │   │   ├── file-manager.ts
+    │   │   │   ├── flow.ts
+    │   │   │   ├── knowledge.ts
+    │   │   │   ├── llm.ts
+    │   │   │   └── user-setting.ts
+    │   │   └── request
+    │   │       ├── base.ts
+    │   │       ├── chat.ts
+    │   │       ├── document.ts
+    │   │       ├── file-manager.ts
+    │   │       ├── flow.ts
+    │   │       └── llm.ts
+    │   ├── inter.less
+    │   ├── layouts
+    │   │   ├── components
+    │   │   │   ├── header
+    │   │   │   │   ├── index.less
+    │   │   │   │   └── index.tsx
+    │   │   │   ├── right-toolbar
+    │   │   │   │   ├── index.less
+    │   │   │   │   └── index.tsx
+    │   │   │   └── user
+    │   │   │       └── index.tsx
+    │   │   ├── index.less
+    │   │   ├── index.tsx
+    │   │   ├── next-header.tsx
+    │   │   └── next.tsx
+    │   ├── less
+    │   │   ├── index.less
+    │   │   ├── mixins.less
+    │   │   └── variable.less
+    │   ├── lib
+    │   │   └── utils.ts
+    │   ├── locales
+    │   │   ├── config.ts
+    │   │   ├── en.ts
+    │   │   ├── until.ts
+    │   │   ├── zh-traditional.ts
+    │   │   └── zh.ts
+    │   ├── pages
+    │   │   ├── 404.jsx
+    │   │   ├── add-knowledge
+    │   │   │   ├── components
+    │   │   │   │   ├── knowledge-chunk
+    │   │   │   │   │   ├── components
+    │   │   │   │   │   │   ├── chunk-card
+    │   │   │   │   │   │   │   ├── index.less
+    │   │   │   │   │   │   │   └── index.tsx
+    │   │   │   │   │   │   ├── chunk-creating-modal
+    │   │   │   │   │   │   │   ├── index.tsx
+    │   │   │   │   │   │   │   └── tag-feature-item.tsx
+    │   │   │   │   │   │   ├── chunk-toolbar
+    │   │   │   │   │   │   │   └── index.tsx
+    │   │   │   │   │   │   ├── document-preview
+    │   │   │   │   │   │   │   ├── hooks.ts
+    │   │   │   │   │   │   │   ├── index.less
+    │   │   │   │   │   │   │   └── preview.tsx
+    │   │   │   │   │   │   └── image-selector
+    │   │   │   │   │   │       ├── index.less
+    │   │   │   │   │   │       └── index.tsx
+    │   │   │   │   │   ├── constant.ts
+    │   │   │   │   │   ├── hooks.ts
+    │   │   │   │   │   ├── index.less
+    │   │   │   │   │   ├── index.tsx
+    │   │   │   │   │   └── utils.ts
+    │   │   │   │   ├── knowledge-dataset
+    │   │   │   │   │   ├── index.less
+    │   │   │   │   │   └── index.tsx
+    │   │   │   │   ├── knowledge-file
+    │   │   │   │   │   ├── constant.ts
+    │   │   │   │   │   ├── create-file-modal.tsx
+    │   │   │   │   │   ├── document-toolbar.tsx
+    │   │   │   │   │   ├── hooks.ts
+    │   │   │   │   │   ├── index.less
+    │   │   │   │   │   ├── index.tsx
+    │   │   │   │   │   ├── parsing-action-cell
+    │   │   │   │   │   │   ├── index.less
+    │   │   │   │   │   │   └── index.tsx
+    │   │   │   │   │   ├── parsing-status-cell
+    │   │   │   │   │   │   ├── index.less
+    │   │   │   │   │   │   └── index.tsx
+    │   │   │   │   │   ├── rename-modal
+    │   │   │   │   │   │   └── index.tsx
+    │   │   │   │   │   ├── set-meta-modal
+    │   │   │   │   │   │   └── index.tsx
+    │   │   │   │   │   ├── utils.ts
+    │   │   │   │   │   └── web-crawl-modal.tsx
+    │   │   │   │   ├── knowledge-graph
+    │   │   │   │   │   ├── constant.ts
+    │   │   │   │   │   ├── force-graph.tsx
+    │   │   │   │   │   ├── index.less
+    │   │   │   │   │   ├── index.tsx
+    │   │   │   │   │   └── util.ts
+    │   │   │   │   ├── knowledge-images
+    │   │   │   │   │   ├── index.less
+    │   │   │   │   │   └── index.tsx
+    │   │   │   │   ├── knowledge-setting
+    │   │   │   │   │   ├── category-panel.tsx
+    │   │   │   │   │   ├── configuration
+    │   │   │   │   │   │   ├── audio.tsx
+    │   │   │   │   │   │   ├── book.tsx
+    │   │   │   │   │   │   ├── common-item.tsx
+    │   │   │   │   │   │   ├── email.tsx
+    │   │   │   │   │   │   ├── index.tsx
+    │   │   │   │   │   │   ├── knowledge-graph.tsx
+    │   │   │   │   │   │   ├── laws.tsx
+    │   │   │   │   │   │   ├── manual.tsx
+    │   │   │   │   │   │   ├── naive.tsx
+    │   │   │   │   │   │   ├── one.tsx
+    │   │   │   │   │   │   ├── paper.tsx
+    │   │   │   │   │   │   ├── picture.tsx
+    │   │   │   │   │   │   ├── presentation.tsx
+    │   │   │   │   │   │   ├── qa.tsx
+    │   │   │   │   │   │   ├── resume.tsx
+    │   │   │   │   │   │   ├── table.tsx
+    │   │   │   │   │   │   └── tag.tsx
+    │   │   │   │   │   ├── hooks.ts
+    │   │   │   │   │   ├── index.less
+    │   │   │   │   │   ├── index.tsx
+    │   │   │   │   │   ├── tag-item.tsx
+    │   │   │   │   │   ├── tag-table
+    │   │   │   │   │   │   ├── index.tsx
+    │   │   │   │   │   │   └── rename-dialog
+    │   │   │   │   │   │       ├── index.tsx
+    │   │   │   │   │   │       └── rename-form.tsx
+    │   │   │   │   │   ├── tag-tabs.tsx
+    │   │   │   │   │   ├── tag-word-cloud.tsx
+    │   │   │   │   │   └── utils.ts
+    │   │   │   │   ├── knowledge-sidebar
+    │   │   │   │   │   ├── index.less
+    │   │   │   │   │   └── index.tsx
+    │   │   │   │   └── knowledge-testing
+    │   │   │   │       ├── index.less
+    │   │   │   │       ├── index.tsx
+    │   │   │   │       ├── testing-control
+    │   │   │   │       │   ├── index.less
+    │   │   │   │       │   ├── index.tsx
+    │   │   │   │       │   └── label-word-cloud.tsx
+    │   │   │   │       └── testing-result
+    │   │   │   │           ├── index.less
+    │   │   │   │           ├── index.tsx
+    │   │   │   │           └── select-files.tsx
+    │   │   │   ├── constant.ts
+    │   │   │   ├── index.less
+    │   │   │   └── index.tsx
+    │   │   ├── api
+    │   │   │   └── index.tsx
+    │   │   ├── chat
+    │   │   │   ├── chat-configuration-modal
+    │   │   │   │   ├── assistant-setting.tsx
+    │   │   │   │   ├── editable-cell.tsx
+    │   │   │   │   ├── index.less
+    │   │   │   │   ├── index.tsx
+    │   │   │   │   ├── model-setting.tsx
+    │   │   │   │   └── prompt-engine.tsx
+    │   │   │   ├── chat-container
+    │   │   │   │   ├── index.less
+    │   │   │   │   └── index.tsx
+    │   │   │   ├── chat-id-modal
+    │   │   │   │   ├── index.less
+    │   │   │   │   └── index.tsx
+    │   │   │   ├── constants.ts
+    │   │   │   ├── context.ts
+    │   │   │   ├── hooks.ts
+    │   │   │   ├── index.less
+    │   │   │   ├── index.tsx
+    │   │   │   ├── interface.ts
+    │   │   │   ├── markdown-content
+    │   │   │   │   ├── index.less
+    │   │   │   │   └── index.tsx
+    │   │   │   ├── share
+    │   │   │   │   ├── index.less
+    │   │   │   │   ├── index.tsx
+    │   │   │   │   └── large.tsx
+    │   │   │   ├── shared-hooks.ts
+    │   │   │   └── utils.ts
+    │   │   ├── chunk
+    │   │   │   ├── chunk-card.tsx
+    │   │   │   ├── chunked-result-panel.tsx
+    │   │   │   ├── chunk-result
+    │   │   │   │   └── index.tsx
+    │   │   │   ├── chunk-toolbar.tsx
+    │   │   │   ├── index.tsx
+    │   │   │   ├── parsed-result
+    │   │   │   │   └── index.tsx
+    │   │   │   ├── parsed-result-panel.tsx
+    │   │   │   └── result-view
+    │   │   │       └── index.tsx
+    │   │   ├── dataset
+    │   │   │   ├── dataset
+    │   │   │   │   ├── dataset-table.tsx
+    │   │   │   │   ├── hooks.ts
+    │   │   │   │   ├── index.tsx
+    │   │   │   │   └── use-dataset-table-columns.tsx
+    │   │   │   ├── index.tsx
+    │   │   │   ├── setting
+    │   │   │   │   ├── advanced-setting-form.tsx
+    │   │   │   │   ├── basic-setting-form.tsx
+    │   │   │   │   ├── chunk-method-card.tsx
+    │   │   │   │   ├── index.less
+    │   │   │   │   ├── index.tsx
+    │   │   │   │   └── utils.ts
+    │   │   │   ├── sidebar
+    │   │   │   │   ├── hooks.tsx
+    │   │   │   │   └── index.tsx
+    │   │   │   └── testing
+    │   │   │       ├── index.tsx
+    │   │   │       └── testing-form.tsx
+    │   │   ├── datasets
+    │   │   │   ├── dataset-creating-dialog.tsx
+    │   │   │   ├── hooks.ts
+    │   │   │   └── index.tsx
+    │   │   ├── document-viewer
+    │   │   │   ├── docx
+    │   │   │   │   ├── index.less
+    │   │   │   │   └── index.tsx
+    │   │   │   ├── excel
+    │   │   │   │   └── index.tsx
+    │   │   │   ├── file-error
+    │   │   │   │   ├── index.less
+    │   │   │   │   └── index.tsx
+    │   │   │   ├── hooks.ts
+    │   │   │   ├── image
+    │   │   │   │   └── index.tsx
+    │   │   │   ├── index.less
+    │   │   │   ├── index.tsx
+    │   │   │   └── pdf
+    │   │   │       └── index.tsx
+    │   │   ├── file-manager
+    │   │   │   ├── action-cell
+    │   │   │   │   └── index.tsx
+    │   │   │   ├── connect-to-knowledge-modal
+    │   │   │   │   └── index.tsx
+    │   │   │   ├── file-toolbar.tsx
+    │   │   │   ├── folder-create-modal
+    │   │   │   │   └── index.tsx
+    │   │   │   ├── hooks.ts
+    │   │   │   ├── index.less
+    │   │   │   ├── index.tsx
+    │   │   │   └── move-file-modal
+    │   │   │       ├── async-tree-select.tsx
+    │   │   │       └── index.tsx
+    │   │   ├── files
+    │   │   │   ├── action-cell.tsx
+    │   │   │   ├── files-table.tsx
+    │   │   │   ├── hooks.ts
+    │   │   │   ├── index.tsx
+    │   │   │   └── link-to-dataset-dialog.tsx
+    │   │   ├── home
+    │   │   │   ├── applications.tsx
+    │   │   │   ├── banner.tsx
+    │   │   │   ├── datasets.tsx
+    │   │   │   ├── header.tsx
+    │   │   │   └── index.tsx
+    │   │   ├── knowledge
+    │   │   │   ├── hooks.ts
+    │   │   │   ├── index.less
+    │   │   │   ├── index.tsx
+    │   │   │   ├── knowledge-card
+    │   │   │   │   ├── index.less
+    │   │   │   │   └── index.tsx
+    │   │   │   └── knowledge-creating-modal
+    │   │   │       └── index.tsx
+    │   │   ├── login
+    │   │   │   ├── index.less
+    │   │   │   ├── index.tsx
+    │   │   │   └── right-panel.tsx
+    │   │   ├── login-next
+    │   │   │   ├── form.tsx
+    │   │   │   ├── hooks.ts
+    │   │   │   └── index.tsx
+    │   │   ├── next-chats
+    │   │   │   ├── chat
+    │   │   │   │   ├── app-settings
+    │   │   │   │   │   ├── chat-basic-settings.tsx
+    │   │   │   │   │   ├── chat-model-settings.tsx
+    │   │   │   │   │   ├── chat-prompt-engine.tsx
+    │   │   │   │   │   ├── index.tsx
+    │   │   │   │   │   ├── subhead.tsx
+    │   │   │   │   │   └── use-chat-setting-schema.tsx
+    │   │   │   │   ├── chat-box.tsx
+    │   │   │   │   ├── index.tsx
+    │   │   │   │   └── sessions.tsx
+    │   │   │   ├── chat-card.tsx
+    │   │   │   └── index.tsx
+    │   │   ├── next-search
+    │   │   │   └── index.tsx
+    │   │   ├── next-searches
+    │   │   │   ├── index.tsx
+    │   │   │   └── search-card.tsx
+    │   │   ├── profile-setting
+    │   │   │   ├── components.tsx
+    │   │   │   ├── hooks.tsx
+    │   │   │   ├── index.tsx
+    │   │   │   ├── model
+    │   │   │   │   ├── index.tsx
+    │   │   │   │   └── model-card.tsx
+    │   │   │   ├── plan
+    │   │   │   │   ├── index.tsx
+    │   │   │   │   └── pricing-card.tsx
+    │   │   │   ├── profile
+    │   │   │   │   └── index.tsx
+    │   │   │   ├── prompt
+    │   │   │   │   └── index.tsx
+    │   │   │   ├── sidebar
+    │   │   │   │   ├── hooks.tsx
+    │   │   │   │   └── index.tsx
+    │   │   │   └── team
+    │   │   │       └── index.tsx
+    │   │   ├── search
+    │   │   │   ├── hooks.ts
+    │   │   │   ├── index.less
+    │   │   │   ├── index.tsx
+    │   │   │   ├── mindmap-drawer.tsx
+    │   │   │   └── sidebar.tsx
+    │   │   ├── test-agent
+    │   │   │   └── index.tsx
+    │   │   ├── user-setting
+    │   │   │   ├── components
+    │   │   │   │   └── setting-title
+    │   │   │   │       └── index.tsx
+    │   │   │   ├── constants.tsx
+    │   │   │   ├── hooks.ts
+    │   │   │   ├── index.less
+    │   │   │   ├── index.tsx
+    │   │   │   ├── interface.ts
+    │   │   │   ├── setting-api
+    │   │   │   │   ├── index.less
+    │   │   │   │   └── index.tsx
+    │   │   │   ├── setting-locale
+    │   │   │   │   ├── index.tsx
+    │   │   │   │   └── TranslationTable.tsx
+    │   │   │   ├── setting-model
+    │   │   │   │   ├── api-key-modal
+    │   │   │   │   │   └── index.tsx
+    │   │   │   │   ├── azure-openai-modal
+    │   │   │   │   │   └── index.tsx
+    │   │   │   │   ├── bedrock-modal
+    │   │   │   │   │   └── index.tsx
+    │   │   │   │   ├── constant.ts
+    │   │   │   │   ├── fish-audio-modal
+    │   │   │   │   │   └── index.tsx
+    │   │   │   │   ├── google-modal
+    │   │   │   │   │   └── index.tsx
+    │   │   │   │   ├── hooks.ts
+    │   │   │   │   ├── hunyuan-modal
+    │   │   │   │   │   └── index.tsx
+    │   │   │   │   ├── index.less
+    │   │   │   │   ├── index.tsx
+    │   │   │   │   ├── ollama-modal
+    │   │   │   │   │   └── index.tsx
+    │   │   │   │   ├── spark-modal
+    │   │   │   │   │   └── index.tsx
+    │   │   │   │   ├── system-model-setting-modal
+    │   │   │   │   │   └── index.tsx
+    │   │   │   │   ├── Tencent-modal
+    │   │   │   │   │   └── index.tsx
+    │   │   │   │   ├── volcengine-modal
+    │   │   │   │   │   └── index.tsx
+    │   │   │   │   └── yiyan-modal
+    │   │   │   │       └── index.tsx
+    │   │   │   ├── setting-password
+    │   │   │   │   ├── index.less
+    │   │   │   │   └── index.tsx
+    │   │   │   ├── setting-profile
+    │   │   │   │   ├── index.less
+    │   │   │   │   └── index.tsx
+    │   │   │   ├── setting-system
+    │   │   │   │   ├── index.less
+    │   │   │   │   ├── index.tsx
+    │   │   │   │   └── task-bar-chat.tsx
+    │   │   │   ├── setting-team
+    │   │   │   │   ├── add-user-modal.tsx
+    │   │   │   │   ├── hooks.ts
+    │   │   │   │   ├── index.less
+    │   │   │   │   ├── index.tsx
+    │   │   │   │   ├── tenant-table.tsx
+    │   │   │   │   └── user-table.tsx
+    │   │   │   ├── sidebar
+    │   │   │   │   ├── index.less
+    │   │   │   │   └── index.tsx
+    │   │   │   └── utils.ts
+    │   │   └── write
+    │   │       ├── index.less
+    │   │       └── index.tsx
+    │   ├── routes.ts
+    │   ├── services
+    │   │   ├── chat-service.ts
+    │   │   ├── file-manager-service.ts
+    │   │   ├── flow-service.ts
+    │   │   ├── knowledge-service.ts
+    │   │   ├── translationService.ts
+    │   │   └── user-service.ts
+    │   ├── theme
+    │   │   ├── theme.ts
+    │   │   └── vars.less
+    │   ├── utils
+    │   │   ├── api.ts
+    │   │   ├── authorization-util.ts
+    │   │   ├── chat.ts
+    │   │   ├── common-util.ts
+    │   │   ├── dataset-util.ts
+    │   │   ├── date.ts
+    │   │   ├── document-util.ts
+    │   │   ├── dom-util.ts
+    │   │   ├── file-util.ts
+    │   │   ├── font-storage.ts
+    │   │   ├── form.ts
+    │   │   ├── index.ts
+    │   │   ├── llm-util.ts
+    │   │   ├── register-server.ts
+    │   │   ├── request.ts
+    │   │   └── store-util.ts
+    │   └── wrappers
+    │       └── auth.tsx
+    ├── tailwind.config.js
+    ├── tailwind.css
+    ├── tsconfig.json
+    └── typings.d.ts
+
+383 directories, 1416 files
