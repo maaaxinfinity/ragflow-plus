@@ -268,14 +268,42 @@ const searchForm = reactive({
 // 表格数据
 const tableData = ref<any[]>([])
 
+// 团队数据类型
+interface TeamItem {
+  id: string
+  name: string
+  owner_name?: string
+  create_date?: string
+  update_date?: string
+  status?: string
+}
+
+// 模型数据类型
+interface ModelItem {
+  name: string
+  model_type?: string
+  fid?: string
+  max_tokens?: number
+  tags?: string
+  status?: string
+}
+
+// 知识库数据类型
+interface KnowledgeBaseItem {
+  id: string
+  name: string
+  description?: string
+  tenant_id?: string
+}
+
 // 团队列表
-const teamList = ref([])
+const teamList = ref<TeamItem[]>([])
 
 // 模型列表
-const modelList = ref([])
+const modelList = ref<ModelItem[]>([])
 
 // 知识库列表
-const knowledgeBaseList = ref([])
+const knowledgeBaseList = ref<KnowledgeBaseItem[]>([])
 
 // 对话框相关
 const dialogVisible = ref(false)
