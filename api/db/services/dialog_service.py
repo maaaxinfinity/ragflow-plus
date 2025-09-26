@@ -40,10 +40,10 @@ class DialogService(CommonService):
 
     @classmethod
     @DB.connection_context()
-    def get_by_id(cls, pid):
+    def get_by_id(cls, pid, tenant_id=None):
         # Handle agent dialogs by creating them on-demand
         if pid and str(pid).startswith('agent_'):
-            return cls._get_or_create_agent_dialog(pid)
+            return cls._get_or_create_agent_dialog(pid, tenant_id)
 
         # Use original implementation for regular dialogs
         try:
@@ -53,7 +53,7 @@ class DialogService(CommonService):
             return False, None
 
     @classmethod
-    def _get_or_create_agent_dialog(cls, agent_dialog_id):
+    def _get_or_create_agent_dialog(cls, agent_dialog_id, current_tenant_id=None):
         """Get or create a dialog from management agent"""
         import requests
         import json
@@ -139,7 +139,8 @@ class DialogService(CommonService):
                         'empty_response': agent.get('empty_response', '抱歉，我无法回答您的问题。'),
                         'parameters': [{'key': 'knowledge', 'optional': False}]
                     }
-                    self.tenant_id = agent.get('team_id', '')
+                    # 使用当前用户的tenant_id，而不是agent的team_id，解决权限问题
+                    self.tenant_id = current_tenant_id or agent.get('team_id', '')
                     self.similarity_threshold = float(agent.get('similarity_threshold', 0.2))
                     self.vector_similarity_weight = float(agent.get('vector_similarity_weight', 0.3))
                     self.top_n = int(agent.get('top_n', 8))

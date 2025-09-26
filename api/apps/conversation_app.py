@@ -272,7 +272,8 @@ def set_conversation():
     req = request.json
     conv_id = req.get("conversation_id")
     is_new = req.get("is_new")
-    del req["is_new"]
+    if "is_new" in req:
+        del req["is_new"]
     if not is_new:
         del req["conversation_id"]
         try:
@@ -332,7 +333,12 @@ def set_conversation():
             if not has_permission:
                 return get_json_result(data=False, message="Only owner of dialog authorized for this operation.", code=settings.RetCode.OPERATING_ERROR)
 
-            e, dia = DialogService.get_by_id(dialog_id)
+            # 获取当前用户的tenant_id以传递给get_by_id
+            user_tenant_id = None
+            tenants = ensure_user_tenant_roles(current_user.id)
+            if tenants:
+                user_tenant_id = tenants[0].tenant_id
+            e, dia = DialogService.get_by_id(dialog_id, user_tenant_id)
             if not e:
                 return get_data_error_result(message="Dialog not found")
 
