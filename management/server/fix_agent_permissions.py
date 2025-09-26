@@ -19,7 +19,7 @@ def fix_agent_permissions():
 
         # 1. 检查user_id字段是否已存在
         cursor.execute("DESCRIBE agent_config")
-        columns = [row[0] for row in cursor.fetchall()]
+        columns = [row['Field'] for row in cursor.fetchall()]
 
         if 'user_id' not in columns:
             print("添加user_id字段到agent_config表...")
