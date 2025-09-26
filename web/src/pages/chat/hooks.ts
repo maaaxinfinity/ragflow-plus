@@ -23,6 +23,7 @@ import {
   useSendMessageWithSse,
 } from '@/hooks/logic-hooks';
 import { IConversation, IDialog, Message } from '@/interfaces/database/chat';
+import chatService from '@/services/chat-service';
 import { getFileExtension } from '@/utils';
 import api from '@/utils/api';
 import { getConversationId } from '@/utils/chat';
@@ -261,6 +262,12 @@ export const useSetConversation = () => {
       isNew: boolean = false,
       conversationId?: string,
     ) => {
+      console.log('[DEBUG] setConversation called with:', {
+        message,
+        isNew,
+        conversationId,
+        dialogId,
+      });
       let actualDialogId = dialogId;
 
       // Temporary frontend fix: create RAGFlow dialog for agent dialogs
@@ -268,6 +275,18 @@ export const useSetConversation = () => {
       if (dialogId && dialogId.startsWith('agent_')) {
         try {
           console.log('[DEBUG] Handling agent dialog on frontend');
+
+          // Get current user's tenant info from existing dialogs
+          const { data: existingDialogs } = await chatService.listDialog();
+          let currentTenantId = '';
+          if (
+            existingDialogs.code === 0 &&
+            existingDialogs.data &&
+            existingDialogs.data.length > 0
+          ) {
+            currentTenantId = existingDialogs.data[0].tenant_id || '';
+            console.log('[DEBUG] Using current tenant ID:', currentTenantId);
+          }
 
           // Fetch agent details from management API
           const agentResponse = await fetch('/api/v1/agents');
@@ -306,7 +325,7 @@ export const useSetConversation = () => {
                 kbIds = [];
               }
 
-              // Create RAGFlow dialog from agent
+              // Create RAGFlow dialog from agent - use CURRENT user's tenant_id for permissions
               const ragflowDialog = {
                 name: agent.name,
                 description: agent.description || '',
@@ -328,13 +347,19 @@ export const useSetConversation = () => {
                     agent.empty_response || '抱歉，我无法回答您的问题。',
                   parameters: [{ key: 'knowledge', optional: false }],
                 },
-                tenant_id: agent.team_id || '',
+                // Use current user's tenant_id instead of agent's team_id to avoid permission issues
+                tenant_id: currentTenantId,
                 similarity_threshold:
                   parseFloat(agent.similarity_threshold) || 0.2,
                 vector_similarity_weight:
                   parseFloat(agent.vector_similarity_weight) || 0.3,
                 top_n: parseInt(agent.top_n) || 8,
               };
+
+              console.log(
+                '[DEBUG] Creating dialog with tenant_id:',
+                currentTenantId,
+              );
 
               // Create the dialog in RAGFlow system
               const createResult = await setDialog(ragflowDialog);
@@ -346,7 +371,8 @@ export const useSetConversation = () => {
                 actualDialogId = dialogId;
               } else {
                 console.error(
-                  '[DEBUG] Failed to create RAGFlow dialog, using original',
+                  '[DEBUG] Failed to create RAGFlow dialog, code:',
+                  createResult,
                 );
                 actualDialogId = dialogId;
               }

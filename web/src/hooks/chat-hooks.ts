@@ -72,12 +72,17 @@ export const useClickConversationCard = () => {
 export const useGetChatSearchParams = () => {
   const [currentQueryParameters] = useSearchParams();
 
-  return {
+  const params = {
     dialogId: currentQueryParameters.get(ChatSearchParams.DialogId) || '',
     conversationId:
       currentQueryParameters.get(ChatSearchParams.ConversationId) || '',
     isNew: currentQueryParameters.get(ChatSearchParams.isNew) || '',
   };
+
+  // Debug logging for URL parameters
+  console.log('[DEBUG] URL parameters parsed:', params);
+
+  return params;
 };
 
 //#endregion
