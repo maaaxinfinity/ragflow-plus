@@ -18,7 +18,7 @@ COPY test ./test
 COPY web ./web
 
 # 安装特定版本的 transformers 和相关依赖
-RUN uv pip install transformers==4.49.0 torch==2.7.0 torchvision==0.22.0
+RUN uv pip install -i https://pypi.tuna.tsinghua.edu.cn/simple transformers==4.49.0 torch==2.7.0 torchvision==0.22.0
 
 # 复制 Docker 相关文件
 COPY docker/service_conf.yaml.template ./conf/service_conf.yaml.template

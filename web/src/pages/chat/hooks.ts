@@ -23,6 +23,7 @@ import {
   useSendMessageWithSse,
 } from '@/hooks/logic-hooks';
 import { IConversation, IDialog, Message } from '@/interfaces/database/chat';
+import chatService from '@/services/chat-service';
 import { getFileExtension } from '@/utils';
 import api from '@/utils/api';
 import { getConversationId } from '@/utils/chat';
@@ -253,6 +254,7 @@ export const useSelectDerivedConversationList = () => {
 export const useSetConversation = () => {
   const { dialogId } = useGetChatSearchParams();
   const { updateConversation } = useUpdateNextConversation();
+  const { setDialog } = useSetNextDialog();
 
   const setConversation = useCallback(
     async (
@@ -260,8 +262,105 @@ export const useSetConversation = () => {
       isNew: boolean = false,
       conversationId?: string,
     ) => {
+      let actualDialogId = dialogId;
+
+      // Handle agent dialogs - create RAGFlow dialog first if needed
+      if (dialogId && dialogId.startsWith('agent_')) {
+        try {
+          // Fetch agent details from management API
+          const agentResponse = await fetch('/api/v1/agents');
+          if (agentResponse.ok) {
+            const agentResult = await agentResponse.json();
+            const allAgents = agentResult.data?.list || [];
+
+            // Find the agent by matching the dialogId
+            const agentId = dialogId.replace('agent_', '');
+            const agent = allAgents.find((a: any) => a.id === agentId);
+
+            if (agent) {
+              // Create RAGFlow dialog from agent
+              const ragflowDialog = {
+                dialog_id: '', // Let system generate new ID
+                name: agent.name,
+                description: agent.description || '',
+                icon: agent.avatar || '/assets/agent/Agent-icon.svg',
+                kb_ids: agent.kb_ids
+                  ? typeof agent.kb_ids === 'string'
+                    ? JSON.parse(agent.kb_ids)
+                    : agent.kb_ids
+                  : [],
+                language: agent.language || 'zh',
+                llm_id: agent.model_name || '',
+                llm_setting: {
+                  temperature: parseFloat(agent.temperature) || 0.1,
+                  max_tokens: parseInt(agent.max_tokens) || 512,
+                  top_p: parseFloat(agent.top_p) || 0.3,
+                  frequency_penalty: parseFloat(agent.frequency_penalty) || 0.7,
+                  presence_penalty: parseFloat(agent.presence_penalty) || 0.4,
+                },
+                llm_setting_type: 'Precise',
+                prompt_config: {
+                  system: agent.system_prompt || '',
+                  prologue: agent.welcome_message || '',
+                  empty_response:
+                    agent.empty_response || '抱歉，我无法回答您的问题。',
+                  parameters: [{ key: 'knowledge', optional: false }],
+                },
+                prompt_type: 'simple',
+                status: agent.status || 'active',
+                tenant_id: agent.team_id || '',
+                similarity_threshold:
+                  parseFloat(agent.similarity_threshold) || 0.2,
+                vector_similarity_weight:
+                  parseFloat(agent.vector_similarity_weight) || 0.3,
+                vector_keywords_weight:
+                  parseFloat(agent.vector_keywords_weight) || 0.7,
+                top_n: parseInt(agent.top_n) || 8,
+                rerank_enabled: !!agent.rerank_enabled,
+                rerank_model: agent.rerank_model || '',
+              };
+
+              console.log(
+                '[DEBUG] Creating RAGFlow dialog from agent:',
+                ragflowDialog,
+              );
+
+              // Create the dialog in RAGFlow system directly
+              const { data: dialogResult } =
+                await chatService.setDialog(ragflowDialog);
+              if (dialogResult.code === 0) {
+                console.log(
+                  '[DEBUG] Successfully created RAGFlow dialog for agent:',
+                  dialogResult,
+                );
+                // Use the newly created dialog ID if available
+                if (dialogResult.data && dialogResult.data.dialog_id) {
+                  actualDialogId = dialogResult.data.dialog_id;
+                  console.log('[DEBUG] Using new dialog ID:', actualDialogId);
+                } else {
+                  // Fallback: keep original agent format
+                  actualDialogId = dialogId;
+                  console.log(
+                    '[DEBUG] No dialog ID returned, using agent format',
+                  );
+                }
+              } else {
+                console.error(
+                  '[DEBUG] Failed to create RAGFlow dialog:',
+                  dialogResult,
+                );
+                // Try using the original agent format anyway
+                actualDialogId = dialogId;
+              }
+            }
+          }
+        } catch (error) {
+          console.warn('Failed to create RAGFlow dialog from agent:', error);
+        }
+      }
+
       const data = await updateConversation({
-        dialog_id: dialogId,
+        dialog_id: actualDialogId,
         name: message,
         is_new: isNew,
         conversation_id: conversationId,
@@ -275,7 +374,7 @@ export const useSetConversation = () => {
 
       return data;
     },
-    [updateConversation, dialogId],
+    [updateConversation, dialogId, setDialog],
   );
 
   return { setConversation };
