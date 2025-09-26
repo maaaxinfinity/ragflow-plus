@@ -17,6 +17,9 @@ COPY test ./test
 # 复制前端源代码目录
 COPY web ./web
 
+# 安装 MySQL 客户端工具
+RUN apt-get update && apt-get install -y mysql-client && rm -rf /var/lib/apt/lists/*
+
 # 安装特定版本的 transformers 和相关依赖
 RUN uv pip install -i https://pypi.tuna.tsinghua.edu.cn/simple transformers==4.49.0 torch==2.7.0 torchvision==0.22.0
 
