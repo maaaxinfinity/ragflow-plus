@@ -292,25 +292,15 @@ def set_conversation():
 
         # 检查是否是agent类型的dialog
         if dialog_id.startswith("agent_"):
-            agent_id = dialog_id[6:]  # 移除"agent_"前缀
+            # 使用DialogService.get_by_id来获取agent dialog，这样可以处理管理系统的agent
+            user_tenant_id = None
+            tenants = ensure_user_tenant_roles(current_user.id)
+            if tenants:
+                user_tenant_id = tenants[0].tenant_id
 
-            # 获取agent信息并检查权限
-            agent_dialog = get_agent_as_dialog(agent_id, current_user.id)
-            if not agent_dialog:
+            e, agent_dialog = DialogService.get_by_id(dialog_id, user_tenant_id)
+            if not e or not agent_dialog:
                 return get_data_error_result(message="Dialog not found")
-
-            # 检查用户是否有权限访问该团队的agent
-            # 如果agent的team_id是"ALL"，则所有用户都可以访问
-            if agent_dialog.tenant_id != 'ALL':
-                tenants = ensure_user_tenant_roles(current_user.id)
-                has_permission = False
-                for tenant in tenants:
-                    if tenant.tenant_id == agent_dialog.tenant_id:
-                        has_permission = True
-                        break
-
-                if not has_permission:
-                    return get_json_result(data=False, message="Only owner of dialog authorized for this operation.", code=settings.RetCode.OPERATING_ERROR)
 
             # 使用agent的配置创建会话
             conv = {

@@ -397,7 +397,26 @@ export const useRemoveNextDialog = () => {
   } = useMutation({
     mutationKey: ['removeDialog'],
     mutationFn: async (dialogIds: string[]) => {
-      const { data } = await chatService.removeDialog({ dialogIds });
+      // 检查是否有management系统的agent
+      const managementDialogs = dialogIds.filter((id) =>
+        id.startsWith('agent_'),
+      );
+      const regularDialogs = dialogIds.filter((id) => !id.startsWith('agent_'));
+
+      if (managementDialogs.length > 0) {
+        message.error(
+          '管理系统创建的Agent无法在此处删除，请前往管理系统���行删除',
+        );
+        return -1; // 返回错误码
+      }
+
+      if (regularDialogs.length === 0) {
+        return 0; // 没有需要删除的dialog
+      }
+
+      const { data } = await chatService.removeDialog({
+        dialogIds: regularDialogs,
+      });
       if (data.code === 0) {
         queryClient.invalidateQueries({ queryKey: ['fetchDialogList'] });
 
