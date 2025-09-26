@@ -49,15 +49,17 @@ class AgentService:
             cursor.execute(count_query, params)
             total = cursor.fetchone()["total"]
 
-            # 查询列表
+            # 查询列表 - 只使用基础字段，避免字段不存在错误
             offset = (page - 1) * size
             list_query = f"""
                 SELECT
-                    a.id, a.name, a.team_id, a.description,
-                    a.icon as avatar, a.llm_id as model_name, a.kb_ids,
-                    a.language, a.llm_setting, a.prompt_type, a.prompt_config,
-                    a.similarity_threshold, a.vector_similarity_weight, a.top_n, a.top_k,
-                    a.do_refer, a.rerank_id, a.is_recommended, a.status,
+                    a.id, a.name, a.team_id, a.user_id, a.created_by, a.description,
+                    a.avatar, a.model_name, a.kb_ids,
+                    a.system_prompt, a.welcome_message, a.language, a.empty_response,
+                    a.similarity_threshold, a.vector_similarity_weight, a.vector_keywords_weight,
+                    a.top_n, a.rerank_enabled, a.rerank_model,
+                    a.temperature, a.max_tokens, a.top_p, a.frequency_penalty,
+                    a.presence_penalty, a.stream, a.is_recommended, a.status,
                     a.create_time, a.create_date, a.update_time, a.update_date,
                     t.name as team_name
                 FROM agent_config a
@@ -134,11 +136,13 @@ class AgentService:
 
             query = """
                 SELECT
-                    a.id, a.name, a.team_id, a.description,
-                    a.icon as avatar, a.llm_id as model_name, a.kb_ids,
-                    a.language, a.llm_setting, a.prompt_type, a.prompt_config,
-                    a.similarity_threshold, a.vector_similarity_weight, a.top_n, a.top_k,
-                    a.do_refer, a.rerank_id, a.is_recommended, a.status,
+                    a.id, a.name, a.team_id, a.user_id, a.created_by, a.description,
+                    a.avatar, a.model_name, a.kb_ids,
+                    a.system_prompt, a.welcome_message, a.language, a.empty_response,
+                    a.similarity_threshold, a.vector_similarity_weight, a.vector_keywords_weight,
+                    a.top_n, a.rerank_enabled, a.rerank_model,
+                    a.temperature, a.max_tokens, a.top_p, a.frequency_penalty,
+                    a.presence_penalty, a.stream, a.is_recommended, a.status,
                     a.create_time, a.create_date, a.update_time, a.update_date,
                     t.name as team_name
                 FROM agent_config a
@@ -221,23 +225,29 @@ class AgentService:
 
             insert_query = """
                 INSERT INTO agent_config (
-                    id, name, team_id, user_id, created_by, description, icon, language,
-                    llm_id, llm_setting, prompt_type, prompt_config, similarity_threshold,
-                    vector_similarity_weight, top_n, top_k, do_refer, rerank_id, kb_ids,
+                    id, name, team_id, user_id, created_by, description, avatar,
+                    model_name, kb_ids, system_prompt, welcome_message, language,
+                    empty_response, similarity_threshold, vector_similarity_weight, vector_keywords_weight,
+                    top_n, rerank_enabled, rerank_model, temperature, max_tokens,
+                    top_p, frequency_penalty, presence_penalty, stream,
                     is_recommended, status, create_time, create_date, update_time, update_date
                 ) VALUES (
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
                 )
             """
             cursor.execute(insert_query, (
                 agent_id, data["name"], data["team_id"], user_id, created_by,
                 data.get("description", ""), data.get("avatar", "/assets/agent/Agent-icon.svg"),
-                language, data.get("model_name"), llm_setting_json,
-                data.get("prompt_type", "simple"), prompt_config_json,
+                data.get("model_name"), kb_ids_json, data.get("system_prompt", ""),
+                data.get("welcome_message", ""), language,
+                data.get("empty_response") or "抱歉，我无法理解您的问题。",
                 data.get("similarity_threshold", 0.2), data.get("vector_similarity_weight", 0.3),
-                data.get("top_n", 6), data.get("top_k", 1024), data.get("do_refer", "1"),
-                data.get("rerank_model", ""), kb_ids_json,
-                data.get("is_recommended", False), status,
+                data.get("vector_keywords_weight", 0.7), data.get("top_n", 8),
+                data.get("rerank_enabled", False), data.get("rerank_model", ""),
+                data.get("temperature", 0.1), data.get("max_tokens", 512),
+                data.get("top_p", 0.3), data.get("frequency_penalty", 0.7),
+                data.get("presence_penalty", 0.4), data.get("stream", True),
+                data.get("is_recommended", False), data.get("status", "active"),
                 current_time, current_date, current_time, current_date
             ))
 
@@ -283,10 +293,10 @@ class AgentService:
                 update_fields.append("description = %s")
                 params.append(data["description"])
             if "avatar" in data:
-                update_fields.append("icon = %s")
+                update_fields.append("avatar = %s")
                 params.append(data["avatar"])
             if "model_name" in data:
-                update_fields.append("llm_id = %s")
+                update_fields.append("model_name = %s")
                 params.append(data["model_name"])
             if kb_ids_json is not None:
                 update_fields.append("kb_ids = %s")
