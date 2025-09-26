@@ -177,7 +177,7 @@ show_final_status() {
 
     # 获取脚本所在目录的绝对路径
     SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    DOCKER_COMPOSE_FILE="$SCRIPT_DIR/docker/docker-compose.yml"
+    DOCKER_COMPOSE_FILE="$SCRIPT_DIR/docker-compose.yml"
 
     echo "所有服务状态:"
     if [ -f "$DOCKER_COMPOSE_FILE" ]; then
