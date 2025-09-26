@@ -271,10 +271,10 @@ def extract_file_content(file_content_bytes, filename, content_type):
 def set_conversation():
     req = request.json
     conv_id = req.get("conversation_id")
-    is_new = req.get("is_new")
+    is_new = req.get("is_new", True)  # 默认为True（新建对话）
     if "is_new" in req:
         del req["is_new"]
-    if not is_new:
+    if is_new is False:  # 明确判断是否为False
         del req["conversation_id"]
         try:
             if not ConversationService.update_by_id(conv_id, req):
