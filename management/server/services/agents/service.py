@@ -94,26 +94,7 @@ class AgentService:
                 if isinstance(agent.get("create_date"), datetime):
                     agent["create_date"] = agent["create_date"].strftime("%Y-%m-%d %H:%M:%S")
 
-                # 为了向后兼容，添加一些扁平化字段（web前端可能需要）
-                try:
-                    if agent.get("llm_setting"):
-                        llm_setting = json.loads(agent["llm_setting"]) if isinstance(agent["llm_setting"], str) else agent["llm_setting"]
-                        agent["temperature"] = llm_setting.get("temperature", 0.1)
-                        agent["max_tokens"] = llm_setting.get("max_tokens", 512)
-                        agent["top_p"] = llm_setting.get("top_p", 0.3)
-                        agent["frequency_penalty"] = llm_setting.get("frequency_penalty", 0.7)
-                        agent["presence_penalty"] = llm_setting.get("presence_penalty", 0.4)
-                except:
-                    pass
-
-                try:
-                    if agent.get("prompt_config"):
-                        prompt_config = json.loads(agent["prompt_config"]) if isinstance(agent["prompt_config"], str) else agent["prompt_config"]
-                        agent["system_prompt"] = prompt_config.get("system", "")
-                        agent["welcome_message"] = prompt_config.get("prologue", "")
-                        agent["empty_response"] = prompt_config.get("empty_response", "")
-                except:
-                    pass
+                # 数据已经包含所有需要的字段，无需额外处理
 
             cursor.close()
             conn.close()
@@ -194,24 +175,7 @@ class AgentService:
             user_id = data.get("user_id") or data.get("created_by")
             created_by = user_id
 
-            # 构建llm_setting对象
-            llm_setting = {
-                "temperature": data.get("temperature", 0.1),
-                "top_p": data.get("top_p", 0.3),
-                "frequency_penalty": data.get("frequency_penalty", 0.7),
-                "presence_penalty": data.get("presence_penalty", 0.4),
-                "max_tokens": data.get("max_tokens", 512)
-            }
-            llm_setting_json = json.dumps(llm_setting)
-
-            # 构建prompt_config对象
-            prompt_config = {
-                "system": data.get("system_prompt", ""),
-                "prologue": data.get("welcome_message", "Hi! I'm your assistant, what can I do for you?"),
-                "parameters": [{"key": "knowledge", "optional": False}],
-                "empty_response": data.get("empty_response", "Sorry! No relevant content was found in the knowledge base!")
-            }
-            prompt_config_json = json.dumps(prompt_config)
+            # 直接使用扁平化的字段结构，与数据库schema一致
 
             # 处理语言字段
             language = data.get("language", "Chinese")
@@ -220,8 +184,8 @@ class AgentService:
             elif language == "en-US":
                 language = "English"
 
-            # 处理状态字段
-            status = "1" if data.get("status", "active") == "active" else "0"
+            # 处理状态字段 - 保持字符串格式与数据库一致
+            status = data.get("status", "active")
 
             insert_query = """
                 INSERT INTO agent_config (
@@ -247,7 +211,7 @@ class AgentService:
                 data.get("temperature", 0.1), data.get("max_tokens", 512),
                 data.get("top_p", 0.3), data.get("frequency_penalty", 0.7),
                 data.get("presence_penalty", 0.4), data.get("stream", True),
-                data.get("is_recommended", False), data.get("status", "active"),
+                data.get("is_recommended", False), status,
                 current_time, current_date, current_time, current_date
             ))
 
@@ -309,49 +273,56 @@ class AgentService:
                     language = "English"
                 update_fields.append("language = %s")
                 params.append(language)
-            # 处理llm_setting更新
-            if any(key in data for key in ["temperature", "top_p", "frequency_penalty", "presence_penalty", "max_tokens"]):
-                llm_setting = {
-                    "temperature": data.get("temperature", 0.1),
-                    "top_p": data.get("top_p", 0.3),
-                    "frequency_penalty": data.get("frequency_penalty", 0.7),
-                    "presence_penalty": data.get("presence_penalty", 0.4),
-                    "max_tokens": data.get("max_tokens", 512)
-                }
-                update_fields.append("llm_setting = %s")
-                params.append(json.dumps(llm_setting))
-            # 处理prompt_config更新
-            if any(key in data for key in ["system_prompt", "welcome_message", "empty_response"]):
-                prompt_config = {
-                    "system": data.get("system_prompt", ""),
-                    "prologue": data.get("welcome_message", "Hi! I'm your assistant, what can I do for you?"),
-                    "parameters": [{"key": "knowledge", "optional": False}],
-                    "empty_response": data.get("empty_response", "Sorry! No relevant content was found in the knowledge base!")
-                }
-                update_fields.append("prompt_config = %s")
-                params.append(json.dumps(prompt_config))
+            # 处理LLM设置字段的直接更新
+            if "temperature" in data:
+                update_fields.append("temperature = %s")
+                params.append(data["temperature"])
+            if "top_p" in data:
+                update_fields.append("top_p = %s")
+                params.append(data["top_p"])
+            if "frequency_penalty" in data:
+                update_fields.append("frequency_penalty = %s")
+                params.append(data["frequency_penalty"])
+            if "presence_penalty" in data:
+                update_fields.append("presence_penalty = %s")
+                params.append(data["presence_penalty"])
+            if "max_tokens" in data:
+                update_fields.append("max_tokens = %s")
+                params.append(data["max_tokens"])
+            # 处理提示配置字段的直接更新
+            if "system_prompt" in data:
+                update_fields.append("system_prompt = %s")
+                params.append(data["system_prompt"])
+            if "welcome_message" in data:
+                update_fields.append("welcome_message = %s")
+                params.append(data["welcome_message"])
+            if "empty_response" in data:
+                update_fields.append("empty_response = %s")
+                params.append(data["empty_response"])
             if "similarity_threshold" in data:
                 update_fields.append("similarity_threshold = %s")
                 params.append(data["similarity_threshold"])
             if "vector_similarity_weight" in data:
                 update_fields.append("vector_similarity_weight = %s")
                 params.append(data["vector_similarity_weight"])
+            if "vector_keywords_weight" in data:
+                update_fields.append("vector_keywords_weight = %s")
+                params.append(data["vector_keywords_weight"])
             if "top_n" in data:
                 update_fields.append("top_n = %s")
                 params.append(data["top_n"])
-            if "top_k" in data:
-                update_fields.append("top_k = %s")
-                params.append(data["top_k"])
+            if "rerank_enabled" in data:
+                update_fields.append("rerank_enabled = %s")
+                params.append(data["rerank_enabled"])
             if "rerank_model" in data:
-                update_fields.append("rerank_id = %s")
+                update_fields.append("rerank_model = %s")
                 params.append(data["rerank_model"])
             if "is_recommended" in data:
                 update_fields.append("is_recommended = %s")
                 params.append(data["is_recommended"])
             if "status" in data:
-                status = "1" if data["status"] == "active" else "0"
                 update_fields.append("status = %s")
-                params.append(status)
+                params.append(data["status"])
 
             update_fields.extend(["update_time = %s", "update_date = %s"])
             params.extend([current_time, current_date, agent_id])
