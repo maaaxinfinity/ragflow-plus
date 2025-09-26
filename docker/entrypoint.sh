@@ -9,7 +9,7 @@ done < /ragflow/conf/service_conf.yaml.template
 
 # 等待MySQL服务启动
 echo "等待MySQL服务启动..."
-while ! mysql -h"${MYSQL_HOST:-mysql}" -P"${MYSQL_PORT:-5455}" -u"${MYSQL_USER:-root}" -p"${MYSQL_PASSWORD:-infini_rag_flow}" -e "SELECT 1;" >/dev/null 2>&1; do
+while ! mysql -h"${MYSQL_HOST:-mysql}" -P"3306" -u"${MYSQL_USER:-root}" -p"${MYSQL_PASSWORD:-infini_rag_flow}" -e "SELECT 1;" >/dev/null 2>&1; do
     echo "MySQL服务未就绪，等待5秒后重试..."
     sleep 5
 done
@@ -18,7 +18,7 @@ echo "MySQL服务已启动"
 # 执行数据库迁移脚本
 echo "执行数据库迁移..."
 if [ -f "/ragflow/docker/migration.sql" ]; then
-    mysql -h"${MYSQL_HOST:-mysql}" -P"${MYSQL_PORT:-5455}" -u"${MYSQL_USER:-root}" -p"${MYSQL_PASSWORD:-infini_rag_flow}" "${MYSQL_DBNAME:-rag_flow}" < /ragflow/docker/migration.sql
+    mysql -h"${MYSQL_HOST:-mysql}" -P"3306" -u"${MYSQL_USER:-root}" -p"${MYSQL_PASSWORD:-infini_rag_flow}" "${MYSQL_DBNAME:-rag_flow}" < /ragflow/docker/migration.sql
     echo "数据库迁移完成"
 else
     echo "迁移脚本不存在，跳过迁移"
