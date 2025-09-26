@@ -706,8 +706,8 @@ const handleEdit = (row: any) => {
     top_p: row.top_p || 0.3,
     frequency_penalty: row.frequency_penalty || 0.7,
     presence_penalty: row.presence_penalty || 0.4,
-    stream: true, // 默认启用流式响应
-    is_recommended: row.is_recommended,
+    stream: row.stream || true, // 默认启用流式响应
+    is_recommended: row.is_recommended || false, // 确保推荐状态正确设置
     status: row.status
   })
   dialogVisible.value = true
