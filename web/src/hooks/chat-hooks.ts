@@ -495,11 +495,20 @@ export const useFetchNextConversation = () => {
       if (isNew === 'true' && dialogId && dialogId.startsWith('agent_')) {
         try {
           // Create a new conversation via backend API first
-          const createResponse = await chatService.setConversation({
+          console.log('[DEBUG] Creating conversation:', {
             conversation_id: conversationId,
             dialog_id: dialogId,
             name: 'New conversation',
           });
+
+          const createResponse = await chatService.setConversation({
+            conversation_id: conversationId,
+            dialog_id: dialogId,
+            name: 'New conversation',
+            is_new: true, // 明确指定这是新建对话
+          });
+
+          console.log('[DEBUG] Create conversation response:', createResponse);
 
           if (createResponse?.data?.code === 0) {
             // Now fetch the created conversation
