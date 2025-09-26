@@ -449,18 +449,6 @@
                   </div>
                 </el-form-item>
               </el-col>
-              <el-col :span="12">
-                <el-form-item label="流式响应">
-                  <el-switch
-                    v-model="formData.stream"
-                    active-text="是"
-                    inactive-text="否"
-                  />
-                  <div class="form-tip">
-                    启用后回答将实时显示
-                  </div>
-                </el-form-item>
-              </el-col>
             </el-row>
           </el-form>
         </el-tab-pane>
@@ -568,7 +556,7 @@ const formData = reactive({
   top_p: 0.3,
   frequency_penalty: 0.7,
   presence_penalty: 0.4,
-  stream: false
+  stream: true
 })
 
 // 表单验证规则
@@ -718,7 +706,7 @@ const handleEdit = (row: any) => {
     top_p: row.top_p || 0.3,
     frequency_penalty: row.frequency_penalty || 0.7,
     presence_penalty: row.presence_penalty || 0.4,
-    stream: row.stream || false,
+    stream: true, // 默认启用流式响应
     is_recommended: row.is_recommended,
     status: row.status
   })
@@ -837,7 +825,7 @@ const handleSubmit = async () => {
         top_p: formData.top_p,
         frequency_penalty: formData.frequency_penalty,
         presence_penalty: formData.presence_penalty,
-        stream: formData.stream,
+        stream: true, // 固定为true，启用流式响应
         is_recommended: formData.is_recommended,
         status: formData.status
       })

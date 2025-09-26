@@ -186,7 +186,7 @@ class AgentService:
                 data.get("rerank_enabled", False), data.get("rerank_model", ""),
                 data.get("temperature", 0.1), data.get("max_tokens", 512),
                 data.get("top_p", 0.3), data.get("frequency_penalty", 0.7),
-                data.get("presence_penalty", 0.4), data.get("stream", False),
+                data.get("presence_penalty", 0.4), data.get("stream", True),
                 data.get("is_recommended", False), data.get("status", "active"),
                 current_time, current_date, current_time, current_date
             ))
