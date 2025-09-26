@@ -79,9 +79,6 @@ export const useGetChatSearchParams = () => {
     isNew: currentQueryParameters.get(ChatSearchParams.isNew) || '',
   };
 
-  // Debug logging for URL parameters
-  console.log('[DEBUG] URL parameters parsed:', params);
-
   return params;
 };
 

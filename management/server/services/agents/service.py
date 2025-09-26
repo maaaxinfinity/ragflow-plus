@@ -163,21 +163,25 @@ class AgentService:
 
             kb_ids_json = json.dumps(data.get("kb_ids", [])) if data.get("kb_ids") else "[]"
 
+            # 获取创建者信息（从请求上下文或参数中获取）
+            user_id = data.get("user_id") or data.get("created_by")
+            created_by = user_id
+
             insert_query = """
                 INSERT INTO agent_config (
-                    id, name, team_id, description, avatar, model_name, kb_ids,
+                    id, name, team_id, user_id, created_by, description, avatar, model_name, kb_ids,
                     system_prompt, welcome_message, language, empty_response,
                     similarity_threshold, vector_similarity_weight, vector_keywords_weight,
                     top_n, rerank_enabled, rerank_model, temperature, max_tokens,
                     top_p, frequency_penalty, presence_penalty, stream,
                     is_recommended, status, create_time, create_date, update_time, update_date
                 ) VALUES (
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
                 )
             """
             cursor.execute(insert_query, (
-                agent_id, data["name"], data["team_id"], data.get("description", ""),
-                data.get("avatar", "/assets/agent/Agent-icon.svg"),
+                agent_id, data["name"], data["team_id"], user_id, created_by,
+                data.get("description", ""), data.get("avatar", "/assets/agent/Agent-icon.svg"),
                 data["model_name"], kb_ids_json, data.get("system_prompt", ""),
                 data.get("welcome_message", ""), data.get("language", "zh-CN"),
                 data.get("empty_response") or "抱歉，我无法理解您的问题。",

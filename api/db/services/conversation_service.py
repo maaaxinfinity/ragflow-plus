@@ -30,23 +30,30 @@ class ConversationService(CommonService):
     model = Conversation
 
     @classmethod
-    @DB.connection_context()
-    def get_list(cls, dialog_id, page_number, items_per_page, orderby, desc, id, name, user_id=None):
-        sessions = cls.model.select().where(cls.model.dialog_id == dialog_id)
-        if id:
-            sessions = sessions.where(cls.model.id == id)
-        if name:
-            sessions = sessions.where(cls.model.name == name)
-        if user_id:
-            sessions = sessions.where(cls.model.user_id == user_id)
-        if desc:
-            sessions = sessions.order_by(cls.model.getter_by(orderby).desc())
-        else:
-            sessions = sessions.order_by(cls.model.getter_by(orderby).asc())
+    def get_list(cls, dialog_id, user_id=None, page=1, page_size=30, orderby="create_time", desc=True, id=None, name=None):
+        """获取对话列表，强制要求user_id参数以确保权限控制"""
+        if user_id is None:
+            raise ValueError("user_id is required for conversation access")
+            
+        conv_list = []
+        try:
+            conv_list = cls.model.select().where(
+                cls.model.dialog_id == dialog_id,
+                cls.model.user_id == user_id  # 强制用户权限检查
+            )
+            if id:
+                conv_list = conv_list.where(cls.model.id == id)
+            if name:
+                conv_list = conv_list.where(cls.model.name.contains(name))
+            if desc:
+                conv_list = conv_list.order_by(cls.model.getter_by(orderby).desc())
+            else:
+                conv_list = conv_list.order_by(cls.model.getter_by(orderby).asc())
 
-        sessions = sessions.paginate(page_number, items_per_page)
-
-        return list(sessions.dicts())
+            conv_list = conv_list.paginate(page, page_size)
+        except Exception as e:
+            pass
+        return conv_list
 
 
 def structure_answer(conv, ans, message_id, session_id):

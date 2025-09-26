@@ -75,19 +75,21 @@ def ensure_user_tenant_roles(user_id):
     return tenants
 
 
-def get_agent_as_dialog(agent_id):
-    """从agent_config表获取agent并转换为dialog格式"""
+def get_agent_as_dialog(agent_id, user_id=None):
+    """从agent_config表获取agent并转换为dialog格式，支持权限验证"""
     try:
         from api.db.db_models import DB
 
         # 使用RAGFlow的数据库连接方式
         with DB.connection_context():
+            # 查询agent信息，包含权限相关字段
             cursor = DB.execute_sql("""
                 SELECT
                     id, name, team_id as tenant_id, description, model_name as llm_id,
                     kb_ids, system_prompt, welcome_message, language, empty_response,
                     similarity_threshold, vector_similarity_weight, top_n,
-                    temperature, status, create_time, create_date, update_time, update_date
+                    temperature, status, create_time, create_date, update_time, update_date,
+                    user_id, created_by
                 FROM agent_config
                 WHERE id = %s AND status = 'active'
             """, (agent_id,))
@@ -99,6 +101,20 @@ def get_agent_as_dialog(agent_id):
             # 转换查询结果为字典
             columns = [desc[0] for desc in cursor.description]
             agent = dict(zip(columns, row))
+            
+            # 权限验证：如果提供了user_id，检查用户是否有权限访问此agent
+            if user_id and agent.get('user_id') and agent['user_id'] != user_id:
+                # 检查用户是否属于同一个团队
+                team_cursor = DB.execute_sql("""
+                    SELECT COUNT(*) as count
+                    FROM user_tenant ut
+                    WHERE ut.user_id = %s AND ut.tenant_id = %s AND ut.status = '1'
+                """, (user_id, agent['tenant_id']))
+                
+                team_row = team_cursor.fetchone()
+                if not team_row or team_row[0] == 0:
+                    # 用户不属于该团队，无权限访问
+                    return None
 
         # 转换为dialog格式
         kb_ids = []
@@ -278,7 +294,7 @@ def set_conversation():
             agent_id = dialog_id[6:]  # 移除"agent_"前缀
 
             # 获取agent信息并检查权限
-            agent_dialog = get_agent_as_dialog(agent_id)
+            agent_dialog = get_agent_as_dialog(agent_id, current_user.id)
             if not agent_dialog:
                 return get_data_error_result(message="Dialog not found")
 
@@ -347,7 +363,7 @@ def get():
         # 检查是否是agent类型的dialog
         if conv.dialog_id.startswith("agent_"):
             agent_id = conv.dialog_id[6:]  # 移除"agent_"前缀
-            agent_dialog = get_agent_as_dialog(agent_id)
+            agent_dialog = get_agent_as_dialog(agent_id, current_user.id)
             if agent_dialog:
                 avatar = agent_dialog.icon
             else:
@@ -423,7 +439,7 @@ def rm():
             # 检查是否是agent类型的dialog
             if conv.dialog_id.startswith("agent_"):
                 agent_id = conv.dialog_id[6:]  # 移除"agent_"前缀
-                agent_dialog = get_agent_as_dialog(agent_id)
+                agent_dialog = get_agent_as_dialog(agent_id, current_user.id)
                 if not agent_dialog:
                     return get_json_result(data=False, message="Dialog not found!", code=settings.RetCode.DATA_ERROR)
 
@@ -459,7 +475,7 @@ def list_convsersation():
             agent_id = dialog_id[6:]  # 移除"agent_"前缀
 
             # 获取agent信息并检查权限
-            agent_dialog = get_agent_as_dialog(agent_id)
+            agent_dialog = get_agent_as_dialog(agent_id, current_user.id)
             if not agent_dialog:
                 return get_json_result(data=False, message="Dialog not found!", code=settings.RetCode.DATA_ERROR)
 

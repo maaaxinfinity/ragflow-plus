@@ -265,7 +265,7 @@ def list_session(tenant_id, chat_id):
         desc = False
     else:
         desc = True
-    convs = ConversationService.get_list(chat_id, page_number, items_per_page, orderby, desc, id, name, user_id)
+    convs = ConversationService.get_list(chat_id, user_id, page_number, items_per_page, orderby, desc, id, name)
     if not convs:
         return get_result(data=[])
     for conv in convs:
