@@ -213,7 +213,7 @@ show_final_status() {
 
     # 获取脚本所在目录的绝对路径
     SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    MAIN_COMPOSE_FILE="$SCRIPT_DIR/docker/docker-compose.yml"
+    MAIN_COMPOSE_FILE="$SCRIPT_DIR/docker-compose.yml"
 
     # 检查主服务
     if [ -f "$MAIN_COMPOSE_FILE" ]; then
