@@ -40,6 +40,96 @@ class DialogService(CommonService):
 
     @classmethod
     @DB.connection_context()
+    def get_by_id(cls, pid):
+        # Handle agent dialogs by creating them on-demand
+        if pid and str(pid).startswith('agent_'):
+            return cls._get_or_create_agent_dialog(pid)
+
+        # Use original implementation for regular dialogs
+        try:
+            obj = cls.model.query(id=pid)[0]
+            return True, obj
+        except Exception:
+            return False, None
+
+    @classmethod
+    def _get_or_create_agent_dialog(cls, agent_dialog_id):
+        """Get or create a dialog from management agent"""
+        import requests
+        import json
+
+        try:
+            # Extract agent ID from agent_xxx format
+            agent_id = agent_dialog_id.replace('agent_', '')
+
+            # Fetch agent from management API
+            response = requests.get('http://localhost:5000/api/v1/agents')
+            if response.status_code != 200:
+                return False, None
+
+            agent_data = response.json()
+            if agent_data.get('code') != 0:
+                return False, None
+
+            agents = agent_data.get('data', {}).get('list', [])
+            agent = next((a for a in agents if a['id'] == agent_id), None)
+
+            if not agent:
+                return False, None
+
+            # Parse kb_ids properly
+            kb_ids = []
+            try:
+                if agent.get('kb_ids'):
+                    kb_ids_str = agent['kb_ids']
+                    # Remove extra escaping layers
+                    while isinstance(kb_ids_str, str) and kb_ids_str.startswith('"') and kb_ids_str.endswith('"'):
+                        kb_ids_str = json.loads(kb_ids_str)
+                    if isinstance(kb_ids_str, list):
+                        kb_ids = kb_ids_str
+                    elif isinstance(kb_ids_str, str):
+                        kb_ids = json.loads(kb_ids_str)
+            except Exception:
+                kb_ids = []
+
+            # Create a virtual dialog object from agent
+            class VirtualDialog:
+                def __init__(self, agent):
+                    self.id = agent_dialog_id
+                    self.dialog_id = agent_dialog_id
+                    self.name = agent['name']
+                    self.description = agent.get('description', '')
+                    self.icon = agent.get('avatar', '/assets/agent/Agent-icon.svg')
+                    self.kb_ids = kb_ids
+                    self.language = agent.get('language', 'zh')
+                    self.llm_id = agent.get('model_name', '')
+                    self.llm_setting = {
+                        'temperature': float(agent.get('temperature', 0.1)),
+                        'max_tokens': int(agent.get('max_tokens', 512)),
+                        'top_p': float(agent.get('top_p', 0.3)),
+                        'frequency_penalty': float(agent.get('frequency_penalty', 0.7)),
+                        'presence_penalty': float(agent.get('presence_penalty', 0.4)),
+                    }
+                    self.prompt_config = {
+                        'system': agent.get('system_prompt', ''),
+                        'prologue': agent.get('welcome_message', ''),
+                        'empty_response': agent.get('empty_response', '抱歉，我无法回答您的问题。'),
+                        'parameters': [{'key': 'knowledge', 'optional': False}]
+                    }
+                    self.tenant_id = agent.get('team_id', '')
+                    self.similarity_threshold = float(agent.get('similarity_threshold', 0.2))
+                    self.vector_similarity_weight = float(agent.get('vector_similarity_weight', 0.3))
+                    self.top_n = int(agent.get('top_n', 8))
+                    self.status = agent.get('status', 'active')
+
+            return True, VirtualDialog(agent)
+
+        except Exception as e:
+            print(f"Error creating agent dialog: {e}")
+            return False, None
+
+    @classmethod
+    @DB.connection_context()
     def get_list(cls, tenant_id, page_number, items_per_page, orderby, desc, id, name):
         chats = cls.model.select()
         if id:
