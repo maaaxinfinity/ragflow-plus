@@ -61,10 +61,33 @@ class DialogService(CommonService):
         try:
             # Extract agent ID from agent_xxx format
             agent_id = agent_dialog_id.replace('agent_', '')
+            print(f"[DEBUG] Creating virtual dialog for agent_id: {agent_id}")
 
             # Fetch agent from management API
-            response = requests.get('http://localhost:5000/api/v1/agents')
-            if response.status_code != 200:
+            # Try different possible URLs for the management API
+            management_urls = [
+                'http://ragflowplus-management-backend:5000/api/v1/agents',  # Docker network (primary)
+                'http://localhost:5000/api/v1/agents',  # Local development
+                'http://127.0.0.1:5000/api/v1/agents',  # Alternative localhost
+                'http://host.docker.internal:5000/api/v1/agents',  # Docker host gateway
+            ]
+
+            response = None
+            for url in management_urls:
+                try:
+                    print(f"[DEBUG] Trying management API URL: {url}")
+                    response = requests.get(url, timeout=5)
+                    if response.status_code == 200:
+                        print(f"[DEBUG] Successfully connected to: {url}")
+                        break
+                    else:
+                        print(f"[DEBUG] Failed with status {response.status_code}: {url}")
+                except Exception as e:
+                    print(f"[DEBUG] Exception for {url}: {e}")
+                    continue
+
+            if not response or response.status_code != 200:
+                print(f"[DEBUG] No successful API connection, returning None")
                 return False, None
 
             agent_data = response.json()

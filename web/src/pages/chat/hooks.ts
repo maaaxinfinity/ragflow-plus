@@ -253,6 +253,7 @@ export const useSelectDerivedConversationList = () => {
 export const useSetConversation = () => {
   const { dialogId } = useGetChatSearchParams();
   const { updateConversation } = useUpdateNextConversation();
+  const { setDialog } = useSetNextDialog();
 
   const setConversation = useCallback(
     async (
@@ -260,10 +261,106 @@ export const useSetConversation = () => {
       isNew: boolean = false,
       conversationId?: string,
     ) => {
-      // Now we can directly use agent_ format dialogId
-      // The backend DialogService will handle agent dialogs automatically
+      let actualDialogId = dialogId;
+
+      // Temporary frontend fix: create RAGFlow dialog for agent dialogs
+      // This will be removed once backend fix is deployed
+      if (dialogId && dialogId.startsWith('agent_')) {
+        try {
+          console.log('[DEBUG] Handling agent dialog on frontend');
+
+          // Fetch agent details from management API
+          const agentResponse = await fetch('/api/v1/agents');
+          if (agentResponse.ok) {
+            const agentResult = await agentResponse.json();
+            const allAgents = agentResult.data?.list || [];
+
+            // Find the agent by matching the dialogId
+            const agentId = dialogId.replace('agent_', '');
+            const agent = allAgents.find((a: any) => a.id === agentId);
+
+            if (agent) {
+              console.log('[DEBUG] Found agent, creating RAGFlow dialog');
+
+              // Parse kb_ids properly
+              let kbIds = [];
+              try {
+                if (agent.kb_ids) {
+                  let kbIdsStr = agent.kb_ids;
+                  // Remove extra escaping layers
+                  while (
+                    typeof kbIdsStr === 'string' &&
+                    kbIdsStr.startsWith('"') &&
+                    kbIdsStr.endsWith('"')
+                  ) {
+                    kbIdsStr = JSON.parse(kbIdsStr);
+                  }
+                  if (Array.isArray(kbIdsStr)) {
+                    kbIds = kbIdsStr;
+                  } else if (typeof kbIdsStr === 'string') {
+                    kbIds = JSON.parse(kbIdsStr);
+                  }
+                }
+              } catch (error) {
+                console.warn('Failed to parse kb_ids:', error);
+                kbIds = [];
+              }
+
+              // Create RAGFlow dialog from agent
+              const ragflowDialog = {
+                name: agent.name,
+                description: agent.description || '',
+                icon: agent.avatar || '/assets/agent/Agent-icon.svg',
+                kb_ids: kbIds,
+                language: agent.language || 'zh',
+                llm_id: agent.model_name || '',
+                llm_setting: {
+                  temperature: parseFloat(agent.temperature) || 0.1,
+                  max_tokens: parseInt(agent.max_tokens) || 512,
+                  top_p: parseFloat(agent.top_p) || 0.3,
+                  frequency_penalty: parseFloat(agent.frequency_penalty) || 0.7,
+                  presence_penalty: parseFloat(agent.presence_penalty) || 0.4,
+                },
+                prompt_config: {
+                  system: agent.system_prompt || '',
+                  prologue: agent.welcome_message || '',
+                  empty_response:
+                    agent.empty_response || '抱歉，我无法回答您的问题。',
+                  parameters: [{ key: 'knowledge', optional: false }],
+                },
+                tenant_id: agent.team_id || '',
+                similarity_threshold:
+                  parseFloat(agent.similarity_threshold) || 0.2,
+                vector_similarity_weight:
+                  parseFloat(agent.vector_similarity_weight) || 0.3,
+                top_n: parseInt(agent.top_n) || 8,
+              };
+
+              // Create the dialog in RAGFlow system
+              const createResult = await setDialog(ragflowDialog);
+              if (createResult === 0) {
+                console.log(
+                  '[DEBUG] Successfully created RAGFlow dialog for agent',
+                );
+                // Use the original agent format - the system should now recognize it
+                actualDialogId = dialogId;
+              } else {
+                console.error(
+                  '[DEBUG] Failed to create RAGFlow dialog, using original',
+                );
+                actualDialogId = dialogId;
+              }
+            }
+          }
+        } catch (error) {
+          console.warn('[DEBUG] Error handling agent dialog:', error);
+          // Fall back to original dialog ID
+          actualDialogId = dialogId;
+        }
+      }
+
       const data = await updateConversation({
-        dialog_id: dialogId,
+        dialog_id: actualDialogId,
         name: message,
         is_new: isNew,
         conversation_id: conversationId,
@@ -277,7 +374,7 @@ export const useSetConversation = () => {
 
       return data;
     },
-    [updateConversation, dialogId],
+    [updateConversation, dialogId, setDialog],
   );
 
   return { setConversation };
