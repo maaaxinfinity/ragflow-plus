@@ -95,11 +95,12 @@ export const useFetchNextDialogList = () => {
     isFetching: loading,
     refetch,
   } = useQuery<IDialog[]>({
-    queryKey: ['fetchDialogList'],
+    queryKey: ['fetchDialogList', 'withManagementAgents'],
     initialData: [],
     gcTime: 0,
     staleTime: 0, // 确保数据总是新鲜的
     refetchOnWindowFocus: true, // 窗口聚焦时刷新
+    refetchInterval: 30000, // 每30秒自动刷新一次
     queryFn: async (...params) => {
       console.log('🚀 ~ queryFn: ~ params:', params);
 
@@ -164,7 +165,10 @@ export const useFetchNextDialogList = () => {
         return {
           id: `agent_${agent.id}`, // 添加前缀避免ID冲突
           dialog_id: `agent_${agent.id}`,
-          name: agent.is_recommended ? `${agent.name} ⭐` : agent.name, // 为推荐agent添加星标
+          name:
+            agent.is_recommended === 1 || agent.is_recommended === true
+              ? `${agent.name} ⭐`
+              : agent.name, // 为推荐agent添加星标
           description: agent.description || '',
           icon: agent.avatar || '/assets/agent/Agent-icon.svg', // 使用agent头像或默认图标
           kb_ids: agent.kb_ids || [],
@@ -256,11 +260,39 @@ export const useFetchNextDialogList = () => {
       }
     };
 
+    // 同时监听自定义事件（用于同域内的实时更新）
+    const handleCustomEvent = (e: Event) => {
+      if ((e as CustomEvent).detail?.type === 'agent_updated') {
+        console.log('🔄 [DEBUG] Agent custom event detected, refreshing...');
+        refetch();
+      }
+    };
+
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    window.addEventListener('agentUpdated', handleCustomEvent);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('agentUpdated', handleCustomEvent);
+    };
   }, [refetch]);
 
   return { data, loading, refetch };
+};
+
+// 辅助函数：触发agent更新事件（供管理系统使用）
+export const triggerAgentUpdate = () => {
+  // 触发localStorage事件（跨标签页）
+  localStorage.setItem('agent_updated', Date.now().toString());
+
+  // 触发自定义事件（当前页面）
+  window.dispatchEvent(
+    new CustomEvent('agentUpdated', {
+      detail: { type: 'agent_updated', timestamp: Date.now() },
+    }),
+  );
+
+  console.log('🚀 [DEBUG] Agent update event triggered');
 };
 
 export const useFetchChatAppList = () => {

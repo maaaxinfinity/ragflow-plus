@@ -100,8 +100,11 @@ const Chat = () => {
   );
   // const [fontSizeModalVisible, setFontSizeModalVisible] = useState(false);
 
-  const handleAppCardEnter = (id: string) => () => {
-    handleItemEnter(id);
+  const handleAppCardEnter = (dialog: IDialog) => () => {
+    // 只有非管理系统创建的agent才启用hover效果
+    if (dialog.source !== 'management') {
+      handleItemEnter(dialog.id);
+    }
   };
 
   const handleConversationCardEnter = (id: string) => () => {
@@ -264,7 +267,7 @@ const Chat = () => {
                       ? styles.chatAppCardSelectedDark
                       : styles.chatAppCardSelected]: dialogId === x.id,
                   })}
-                  onMouseEnter={handleAppCardEnter(x.id)}
+                  onMouseEnter={handleAppCardEnter(x)}
                   onMouseLeave={handleItemLeave}
                   onClick={handleDialogCardClick(x.id)}
                 >
@@ -283,7 +286,7 @@ const Chat = () => {
                         <div>{x.description}</div>
                       </section>
                     </Space>
-                    {activated === x.id && (
+                    {activated === x.id && x.source !== 'management' && (
                       <section>
                         <Dropdown menu={{ items: buildAppItems(x) }}>
                           <ChatAppCube
