@@ -171,7 +171,7 @@
                 action=""
                 :show-file-list="false"
                 :before-upload="handleAvatarUpload"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/svg+xml"
               >
                 <img v-if="formData.avatar" :src="formData.avatar" class="avatar" />
                 <div v-else class="avatar-placeholder">
@@ -180,7 +180,7 @@
                 </div>
               </el-upload>
               <div class="form-tip">
-                支持 JPG、PNG 格式，建议尺寸 200x200 像素
+                支持 JPG、PNG、SVG 格式，建议尺寸 200x200 像素
               </div>
             </el-form-item>
 
@@ -861,11 +861,11 @@ const getDefaultAvatar = () => {
 
 // 头像上传处理
 const handleAvatarUpload = (file: File) => {
-  const isJPG = file.type === 'image/jpeg' || file.type === 'image/png'
+  const isValidFormat = file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/svg+xml'
   const isLt2M = file.size / 1024 / 1024 < 2
 
-  if (!isJPG) {
-    ElMessage.error('头像图片只能是 JPG/PNG 格式!')
+  if (!isValidFormat) {
+    ElMessage.error('头像图片只能是 JPG/PNG/SVG 格式!')
     return false
   }
   if (!isLt2M) {

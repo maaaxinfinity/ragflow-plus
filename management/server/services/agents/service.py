@@ -156,14 +156,23 @@ class AgentService:
 
             # 如果设为默认，先取消同团队其他Agent的默认状态
             if data.get("is_default", False):
-                # 导入RAGFlow的数据库模块来正确处理事务
+                # 使用RAGFlow的数据库模块来正确处理事务
                 import sys
-                sys.path.insert(0, '/ragflow')
-                sys.path.insert(0, '/ragflow/api')
-                from api.db.db_models import DB
+                import os
+                ragflow_path = '/ragflow'
+                if ragflow_path not in sys.path:
+                    sys.path.insert(0, ragflow_path)
+                if os.path.join(ragflow_path, 'api') not in sys.path:
+                    sys.path.insert(0, os.path.join(ragflow_path, 'api'))
 
-                with DB.connection_context():
-                    DB.execute_sql("UPDATE agent_config SET is_default = 0 WHERE team_id = %s", (data["team_id"],))
+                try:
+                    from api.db.db_models import DB
+                    with DB.connection_context():
+                        DB.execute_sql("UPDATE agent_config SET is_default = 0 WHERE team_id = %s", (data["team_id"],))
+                except ImportError:
+                    # 如果导入失败，使用普通的数据库连接
+                    update_query = "UPDATE agent_config SET is_default = 0 WHERE team_id = %s"
+                    cursor.execute(update_query, (data["team_id"],))
 
             # 创建Agent
             agent_id = get_uuid()
@@ -225,15 +234,24 @@ class AgentService:
 
             # 如果设为默认，先取消同团队其他Agent的默认状态
             if data.get("is_default", False):
-                # 导入RAGFlow的数据库模块来正确处理事务
+                # 使用RAGFlow的数据库模块来正确处理事务
                 import sys
-                sys.path.insert(0, '/ragflow')
-                sys.path.insert(0, '/ragflow/api')
-                from api.db.db_models import DB
+                import os
+                ragflow_path = '/ragflow'
+                if ragflow_path not in sys.path:
+                    sys.path.insert(0, ragflow_path)
+                if os.path.join(ragflow_path, 'api') not in sys.path:
+                    sys.path.insert(0, os.path.join(ragflow_path, 'api'))
 
-                with DB.connection_context():
-                    DB.execute_sql("UPDATE agent_config SET is_default = 0 WHERE team_id = %s AND id != %s",
-                                   (existing_agent["team_id"], agent_id))
+                try:
+                    from api.db.db_models import DB
+                    with DB.connection_context():
+                        DB.execute_sql("UPDATE agent_config SET is_default = 0 WHERE team_id = %s AND id != %s",
+                                       (existing_agent["team_id"], agent_id))
+                except ImportError:
+                    # 如果导入失败，使用普通的数据库连接
+                    update_query = "UPDATE agent_config SET is_default = 0 WHERE team_id = %s AND id != %s"
+                    cursor.execute(update_query, (existing_agent["team_id"], agent_id))
 
             # 更新Agent
             current_time = int(datetime.now().timestamp())
@@ -291,24 +309,50 @@ class AgentService:
 
     @classmethod
     def delete_agent(cls, agent_id):
-        """删除Agent配置 - 使用RAGFlow的数据库连接方式"""
+        """删除Agent配置"""
         try:
-            # 导入RAGFlow的数据库模块
+            # 使用RAGFlow的数据库模块来正确处理事务
             import sys
-            sys.path.insert(0, '/ragflow')
-            sys.path.insert(0, '/ragflow/api')
-            from api.db.db_models import DB
+            import os
+            ragflow_path = '/ragflow'
+            if ragflow_path not in sys.path:
+                sys.path.insert(0, ragflow_path)
+            if os.path.join(ragflow_path, 'api') not in sys.path:
+                sys.path.insert(0, os.path.join(ragflow_path, 'api'))
 
-            with DB.connection_context():
+            try:
+                from api.db.db_models import DB
+                with DB.connection_context():
+                    # 检查Agent是否存在
+                    cursor = DB.execute_sql("SELECT id FROM agent_config WHERE id = %s", (agent_id,))
+                    if not cursor.fetchone():
+                        return False
+
+                    # 删除Agent
+                    DB.execute_sql("DELETE FROM agent_config WHERE id = %s", (agent_id,))
+
+                return True
+            except ImportError:
+                # 如果导入失败，使用普通的数据库连接
+                conn = cls._get_db_connection()
+                cursor = conn.cursor(dictionary=True)
+
                 # 检查Agent是否存在
-                cursor = DB.execute_sql("SELECT id FROM agent_config WHERE id = %s", (agent_id,))
+                check_query = "SELECT id FROM agent_config WHERE id = %s"
+                cursor.execute(check_query, (agent_id,))
                 if not cursor.fetchone():
+                    cursor.close()
+                    conn.close()
                     return False
 
                 # 删除Agent
-                DB.execute_sql("DELETE FROM agent_config WHERE id = %s", (agent_id,))
+                delete_query = "DELETE FROM agent_config WHERE id = %s"
+                cursor.execute(delete_query, (agent_id,))
+                conn.commit()
 
-            return True
+                cursor.close()
+                conn.close()
+                return True
 
         except Exception as e:
             print(f"删除Agent失败: {str(e)}")
@@ -316,34 +360,66 @@ class AgentService:
 
     @classmethod
     def set_default_agent(cls, agent_id, is_default):
-        """设置默认Agent - 使用RAGFlow的数据库连接方式"""
+        """设置默认Agent"""
         try:
-            # 导入RAGFlow的数据库模块
+            # 使用RAGFlow的数据库模块来正确处理事务
             import sys
-            sys.path.insert(0, '/ragflow')
-            sys.path.insert(0, '/ragflow/api')
-            from api.db.db_models import DB
+            import os
+            ragflow_path = '/ragflow'
+            if ragflow_path not in sys.path:
+                sys.path.insert(0, ragflow_path)
+            if os.path.join(ragflow_path, 'api') not in sys.path:
+                sys.path.insert(0, os.path.join(ragflow_path, 'api'))
 
-            with DB.connection_context():
+            try:
+                from api.db.db_models import DB
+                with DB.connection_context():
+                    # 获取Agent信息
+                    cursor = DB.execute_sql("SELECT id, team_id FROM agent_config WHERE id = %s", (agent_id,))
+                    row = cursor.fetchone()
+                    if not row:
+                        return False
+
+                    columns = [desc[0] for desc in cursor.description]
+                    agent = dict(zip(columns, row))
+
+                    if is_default:
+                        # 先取消同团队其他Agent的默认状态
+                        DB.execute_sql("UPDATE agent_config SET is_default = 0 WHERE team_id = %s AND id != %s",
+                                       (agent["team_id"], agent_id))
+
+                    # 更新当前Agent的默认状态
+                    DB.execute_sql("UPDATE agent_config SET is_default = %s WHERE id = %s",
+                                   (is_default, agent_id))
+
+                return True
+            except ImportError:
+                # 如果导入失败，使用普通的数据库连接
+                conn = cls._get_db_connection()
+                cursor = conn.cursor(dictionary=True)
+
                 # 获取Agent信息
-                cursor = DB.execute_sql("SELECT id, team_id FROM agent_config WHERE id = %s", (agent_id,))
-                row = cursor.fetchone()
-                if not row:
+                check_query = "SELECT id, team_id FROM agent_config WHERE id = %s"
+                cursor.execute(check_query, (agent_id,))
+                agent = cursor.fetchone()
+                if not agent:
+                    cursor.close()
+                    conn.close()
                     return False
-
-                columns = [desc[0] for desc in cursor.description]
-                agent = dict(zip(columns, row))
 
                 if is_default:
                     # 先取消同团队其他Agent的默认状态
-                    DB.execute_sql("UPDATE agent_config SET is_default = 0 WHERE team_id = %s AND id != %s",
-                                   (agent["team_id"], agent_id))
+                    reset_query = "UPDATE agent_config SET is_default = 0 WHERE team_id = %s AND id != %s"
+                    cursor.execute(reset_query, (agent["team_id"], agent_id))
 
                 # 更新当前Agent的默认状态
-                DB.execute_sql("UPDATE agent_config SET is_default = %s WHERE id = %s",
-                               (is_default, agent_id))
+                update_query = "UPDATE agent_config SET is_default = %s WHERE id = %s"
+                cursor.execute(update_query, (is_default, agent_id))
 
-            return True
+                conn.commit()
+                cursor.close()
+                conn.close()
+                return True
 
         except Exception as e:
             print(f"设置默认Agent失败: {str(e)}")

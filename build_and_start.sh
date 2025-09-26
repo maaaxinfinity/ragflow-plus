@@ -148,7 +148,7 @@ start_all_services() {
 
     # 等待主服务启动并确保网络存在
     log_info "等待主服务启动..."
-    sleep 15
+    sleep 2
 
     # 检查网络是否存在
     log_info "检查 Docker 网络..."
@@ -156,7 +156,7 @@ start_all_services() {
         log_warning "docker_ragflow 网络不存在，重新启动主服务..."
         docker-compose down
         docker-compose up -d
-        sleep 10
+        sleep 2
     fi
 
     # 验证主服务状态
