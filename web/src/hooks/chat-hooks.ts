@@ -344,7 +344,7 @@ export const useFetchNextConversationList = () => {
 };
 
 export const useFetchNextConversation = () => {
-  const { isNew, conversationId } = useGetChatSearchParams();
+  const { isNew, conversationId, dialogId } = useGetChatSearchParams();
   const { sharedId } = useGetSharedChatSearchParams();
   const {
     data,
@@ -371,6 +371,51 @@ export const useFetchNextConversation = () => {
 
         return { ...conversation, message: messageList };
       }
+
+      // Handle new conversations for agent dialogs
+      if (isNew === 'true' && dialogId && dialogId.startsWith('agent_')) {
+        try {
+          // Fetch agent details from management API
+          const agentResponse = await fetch('/api/v1/agents');
+          if (agentResponse.ok) {
+            const agentResult = await agentResponse.json();
+            const allAgents = agentResult.data?.list || [];
+
+            // Find the agent by matching the dialogId
+            const agentId = dialogId.replace('agent_', '');
+            const agent = allAgents.find((a: any) => a.id === agentId);
+
+            if (agent) {
+              // Create a conversation context for the agent
+              return {
+                id: conversationId,
+                name: `与${agent.name}的对话`,
+                avatar: agent.avatar || '/assets/agent/Agent-icon.svg',
+                dialog_id: dialogId,
+                message: [],
+                reference: [],
+                // Include agent context for future message handling
+                agent_context: {
+                  id: agent.id,
+                  name: agent.name,
+                  description: agent.description,
+                  welcome_message: agent.welcome_message,
+                  system_prompt: agent.system_prompt,
+                  team_id: agent.team_id,
+                  kb_ids: agent.kb_ids || [],
+                  model_name: agent.model_name,
+                },
+              };
+            }
+          }
+        } catch (error) {
+          console.warn(
+            'Failed to fetch agent details for new conversation:',
+            error,
+          );
+        }
+      }
+
       return { message: [] };
     },
   });
