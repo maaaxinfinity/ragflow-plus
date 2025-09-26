@@ -736,6 +736,10 @@ const handleDelete = async (row: any) => {
       if (result.code === 0) {
         ElMessage.success('删除成功')
         getTableData()
+
+        // 通知其他标签页刷新agent列表
+        localStorage.setItem('agent_updated', Date.now().toString())
+        localStorage.removeItem('agent_updated')
       } else {
         ElMessage.error(result.message || '删除失败')
       }
@@ -772,6 +776,10 @@ const handleRecommendedChange = async (row: any) => {
       if (result.code === 0) {
         row.is_recommended = newRecommendedStatus
         ElMessage.success(newRecommendedStatus ? '已设为推荐Agent' : '已取消推荐Agent')
+
+        // 通知其他标签页刷新agent列表
+        localStorage.setItem('agent_updated', Date.now().toString())
+        localStorage.removeItem('agent_updated')
       } else {
         ElMessage.error(result.message || '操作失败')
       }
@@ -837,6 +845,10 @@ const handleSubmit = async () => {
         ElMessage.success(formData.id ? '更新成功' : '创建成功')
         dialogVisible.value = false
         getTableData()
+
+        // 通知其他标签页刷新agent列表
+        localStorage.setItem('agent_updated', Date.now().toString())
+        localStorage.removeItem('agent_updated') // 立即删除以确保每次都触发事件
       } else {
         ElMessage.error(result.message || '操作失败')
       }

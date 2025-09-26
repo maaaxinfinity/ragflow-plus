@@ -22,7 +22,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { message } from 'antd';
 import dayjs, { Dayjs } from 'dayjs';
 import { has, set } from 'lodash';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { history, useSearchParams } from 'umi';
 
 //#region logic
@@ -98,7 +98,8 @@ export const useFetchNextDialogList = () => {
     queryKey: ['fetchDialogList'],
     initialData: [],
     gcTime: 0,
-    refetchOnWindowFocus: false,
+    staleTime: 0, // 确保数据总是新鲜的
+    refetchOnWindowFocus: true, // 窗口聚焦时刷新
     queryFn: async (...params) => {
       console.log('🚀 ~ queryFn: ~ params:', params);
 
@@ -114,23 +115,48 @@ export const useFetchNextDialogList = () => {
         userTenants = Array.from(tenantIds);
       }
 
+      console.log('🔍 [DEBUG] User tenants:', userTenants);
+
       // 获取管理系统的 agents，并过滤用户可访问的团队
       let managementAgents: any[] = [];
       try {
+        console.log('📡 [DEBUG] Fetching management agents...');
         const agentResponse = await fetch('/api/v1/agents');
+
         if (agentResponse.ok) {
           const agentResult = await agentResponse.json();
+          console.log('📊 [DEBUG] Agent API response:', agentResult);
+
           const allAgents = agentResult.data?.list || [];
-          // 只保留用户属于的团队的agents，或者team_id为"ALL"的agents
-          managementAgents = allAgents.filter(
-            (agent: any) =>
-              agent.team_id === 'ALL' ||
-              userTenants.length === 0 ||
-              userTenants.includes(agent.team_id),
+          console.log('👥 [DEBUG] All agents:', allAgents.length);
+
+          // 如果没有租户信息，允许访问所有"ALL"团队的agents
+          // 或者如果用户有租户，则过滤相应团队的agents
+          managementAgents = allAgents.filter((agent: any) => {
+            const isAllTeam = agent.team_id === 'ALL';
+            const userHasAccess =
+              userTenants.length === 0 || userTenants.includes(agent.team_id);
+
+            console.log(
+              `🔐 [DEBUG] Agent ${agent.name}: team=${agent.team_id}, isAll=${isAllTeam}, hasAccess=${userHasAccess}`,
+            );
+
+            return isAllTeam || userHasAccess;
+          });
+
+          console.log(
+            '✅ [DEBUG] Filtered management agents:',
+            managementAgents.length,
+          );
+        } else {
+          console.error(
+            '❌ [DEBUG] Agent API failed:',
+            agentResponse.status,
+            agentResponse.statusText,
           );
         }
       } catch (error) {
-        console.warn('Failed to fetch management agents:', error);
+        console.error('❌ [DEBUG] Failed to fetch management agents:', error);
       }
 
       // 转换 agents 为 dialog 格式
@@ -175,24 +201,56 @@ export const useFetchNextDialogList = () => {
 
       let allDialogs: IDialog[] = [];
 
-      if (dialogData.code === 0) {
+      if (dialogData?.code === 0) {
         const originalDialogs: IDialog[] = dialogData.data || [];
         allDialogs = [...originalDialogs, ...convertedAgents];
+
+        console.log('🔗 [DEBUG] Combined dialogs:', {
+          original: originalDialogs.length,
+          management: convertedAgents.length,
+          total: allDialogs.length,
+        });
 
         if (allDialogs.length > 0) {
           if (allDialogs.every((x) => x.id !== dialogId)) {
             handleClickDialog(allDialogs[0].id);
           }
         } else {
+          console.warn('⚠️ [DEBUG] No dialogs found, redirecting to chat');
           history.push('/chat');
         }
       } else {
+        console.warn(
+          '⚠️ [DEBUG] Dialog API failed, using management agents only',
+        );
         allDialogs = convertedAgents;
       }
+
+      console.log(
+        '🚀 [DEBUG] Final dialog list:',
+        allDialogs.map((d) => ({
+          id: d.id,
+          name: d.name,
+          source: d.source || 'ragflow',
+        })),
+      );
 
       return allDialogs;
     },
   });
+
+  // 监听management系统的agent更新事件
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'agent_updated') {
+        console.log('🔄 [DEBUG] Agent updated event detected, refreshing...');
+        refetch();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [refetch]);
 
   return { data, loading, refetch };
 };
@@ -377,18 +435,41 @@ export const useFetchNextConversation = () => {
       // Handle new conversations for agent dialogs
       if (isNew === 'true' && dialogId && dialogId.startsWith('agent_')) {
         try {
-          // Fetch agent details from management API
+          // Create a new conversation via backend API first
+          const createResponse = await chatService.setConversation({
+            conversation_id: conversationId,
+            dialog_id: dialogId,
+            name: 'New conversation',
+          });
+
+          if (createResponse?.data?.code === 0) {
+            // Now fetch the created conversation
+            const { data: fetchResponse } = await chatService.getConversation({
+              conversationId,
+            });
+
+            if (fetchResponse?.code === 0) {
+              const conversation = fetchResponse.data ?? {};
+              const messageList = buildMessageListWithUuid(
+                conversation?.message,
+              );
+              return { ...conversation, message: messageList };
+            }
+          }
+
+          // Fallback: if backend creation fails, create a temporary conversation
+          console.warn(
+            'Failed to create conversation via backend, using fallback',
+          );
           const agentResponse = await fetch('/api/v1/agents');
           if (agentResponse.ok) {
             const agentResult = await agentResponse.json();
             const allAgents = agentResult.data?.list || [];
 
-            // Find the agent by matching the dialogId
             const agentId = dialogId.replace('agent_', '');
             const agent = allAgents.find((a: any) => a.id === agentId);
 
             if (agent) {
-              // Create a conversation context for the agent
               return {
                 id: conversationId,
                 name: `与${agent.name}的对话`,
@@ -396,25 +477,11 @@ export const useFetchNextConversation = () => {
                 dialog_id: dialogId,
                 message: [],
                 reference: [],
-                // Include agent context for future message handling
-                agent_context: {
-                  id: agent.id,
-                  name: agent.name,
-                  description: agent.description,
-                  welcome_message: agent.welcome_message,
-                  system_prompt: agent.system_prompt,
-                  team_id: agent.team_id,
-                  kb_ids: agent.kb_ids || [],
-                  model_name: agent.model_name,
-                },
               };
             }
           }
         } catch (error) {
-          console.warn(
-            'Failed to fetch agent details for new conversation:',
-            error,
-          );
+          console.warn('Failed to handle new agent conversation:', error);
         }
       }
 
