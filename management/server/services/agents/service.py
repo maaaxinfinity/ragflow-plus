@@ -53,7 +53,7 @@ class AgentService:
             offset = (page - 1) * size
             list_query = f"""
                 SELECT
-                    a.id, a.name, a.team_id, a.description, a.model_name,
+                    a.id, a.name, a.team_id, a.description, a.avatar, a.model_name,
                     a.kb_ids, a.system_prompt, a.welcome_message, a.language,
                     a.empty_response, a.similarity_threshold, a.vector_similarity_weight,
                     a.vector_keywords_weight, a.top_n, a.rerank_enabled, a.rerank_model,
@@ -113,8 +113,8 @@ class AgentService:
             cursor = conn.cursor(dictionary=True)
 
             query = """
-                SELECT 
-                    a.id, a.name, a.team_id, a.description, a.model_name,
+                SELECT
+                    a.id, a.name, a.team_id, a.description, a.avatar, a.model_name,
                     a.kb_ids, a.system_prompt, a.welcome_message, a.is_default,
                     a.status, a.create_time, a.create_date, a.update_time, a.update_date,
                     t.name as team_name
@@ -183,18 +183,19 @@ class AgentService:
 
             insert_query = """
                 INSERT INTO agent_config (
-                    id, name, team_id, description, model_name, kb_ids,
+                    id, name, team_id, description, avatar, model_name, kb_ids,
                     system_prompt, welcome_message, language, empty_response,
                     similarity_threshold, vector_similarity_weight, vector_keywords_weight,
                     top_n, rerank_enabled, rerank_model, temperature, max_tokens,
                     top_p, frequency_penalty, presence_penalty, stream,
                     is_default, status, create_time, create_date, update_time, update_date
                 ) VALUES (
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
                 )
             """
             cursor.execute(insert_query, (
                 agent_id, data["name"], data["team_id"], data.get("description", ""),
+                data.get("avatar", "/assets/agent/Agent-icon.svg"),
                 data["model_name"], kb_ids_json, data.get("system_prompt", ""),
                 data.get("welcome_message", ""), data.get("language", "zh-CN"),
                 data.get("empty_response") or "抱歉，我无法理解您的问题。",
@@ -268,6 +269,9 @@ class AgentService:
             if "description" in data:
                 update_fields.append("description = %s")
                 params.append(data["description"])
+            if "avatar" in data:
+                update_fields.append("avatar = %s")
+                params.append(data["avatar"])
             if "model_name" in data:
                 update_fields.append("model_name = %s")
                 params.append(data["model_name"])

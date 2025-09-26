@@ -532,7 +532,7 @@ const formData = reactive({
   avatar: '/assets/agent/Agent-icon.svg', // 添加头像字段，设置默认头像
   model_name: '',
   kb_ids: [] as string[],
-  system_prompt: '',
+  system_prompt: '你是一个学术领域的专家，请根据知识库的内容来尽可能详细的回答问题。\n        以下是知识库：\n        {knowledge}\n        以上是知识库。',
   welcome_message: '',
   is_default: false,
   status: 'active',
@@ -893,7 +893,7 @@ const resetForm = () => {
     avatar: getDefaultAvatar(), // 设置默认头像
     model_name: '',
     kb_ids: [],
-    system_prompt: '',
+    system_prompt: '你是一个学术领域的专家，请根据知识库的内容来尽可能详细的回答问题。\n        以下是知识库：\n        {knowledge}\n        以上是知识库。',
     welcome_message: '',
     is_default: false,
     status: 'active'

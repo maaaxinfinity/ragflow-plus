@@ -81,6 +81,11 @@ def init_database():
         print("初始化数据库表...")
         from create_agent_table import create_agent_config_table
         create_agent_config_table()
+
+        print("升级数据库表结构...")
+        from upgrade_agent_table import upgrade_agent_config_table
+        upgrade_agent_config_table()
+
         print("数据库初始化完成")
     except Exception as e:
         print(f"数据库初始化失败: {str(e)}")

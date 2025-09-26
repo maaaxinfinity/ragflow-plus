@@ -19,6 +19,7 @@ def create_agent_config_table():
             name VARCHAR(255) NOT NULL,
             team_id VARCHAR(36) NOT NULL,
             description TEXT,
+            avatar TEXT,
             model_name VARCHAR(255),
             kb_ids JSON,
             system_prompt TEXT,
