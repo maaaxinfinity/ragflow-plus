@@ -58,7 +58,7 @@ class AgentService:
                     a.empty_response, a.similarity_threshold, a.vector_similarity_weight,
                     a.vector_keywords_weight, a.top_n, a.rerank_enabled, a.rerank_model,
                     a.temperature, a.max_tokens, a.top_p, a.frequency_penalty,
-                    a.presence_penalty, a.stream, a.is_default, a.status,
+                    a.presence_penalty, a.stream, a.is_recommended, a.status,
                     a.create_time, a.create_date, a.update_time, a.update_date,
                     t.name as team_name
                 FROM agent_config a
@@ -115,7 +115,7 @@ class AgentService:
             query = """
                 SELECT
                     a.id, a.name, a.team_id, a.description, a.avatar, a.model_name,
-                    a.kb_ids, a.system_prompt, a.welcome_message, a.is_default,
+                    a.kb_ids, a.system_prompt, a.welcome_message, a.is_recommended,
                     a.status, a.create_time, a.create_date, a.update_time, a.update_date,
                     t.name as team_name
                 FROM agent_config a
@@ -154,25 +154,7 @@ class AgentService:
             if cursor.fetchone()["count"] > 0:
                 raise Exception("该团队中已存在同名Agent")
 
-            # 如果设为默认，先取消同团队其他Agent的默认状态
-            if data.get("is_default", False):
-                # 使用RAGFlow的数据库模块来正确处理事务
-                import sys
-                import os
-                ragflow_path = '/ragflow'
-                if ragflow_path not in sys.path:
-                    sys.path.insert(0, ragflow_path)
-                if os.path.join(ragflow_path, 'api') not in sys.path:
-                    sys.path.insert(0, os.path.join(ragflow_path, 'api'))
-
-                try:
-                    from api.db.db_models import DB
-                    with DB.connection_context():
-                        DB.execute_sql("UPDATE agent_config SET is_default = 0 WHERE team_id = %s", (data["team_id"],))
-                except ImportError:
-                    # 如果导入失败，使用普通的数据库连接
-                    update_query = "UPDATE agent_config SET is_default = 0 WHERE team_id = %s"
-                    cursor.execute(update_query, (data["team_id"],))
+            # 推荐状态不需要互斥，可以多个Agent同时推荐
 
             # 创建Agent
             agent_id = get_uuid()
@@ -188,7 +170,7 @@ class AgentService:
                     similarity_threshold, vector_similarity_weight, vector_keywords_weight,
                     top_n, rerank_enabled, rerank_model, temperature, max_tokens,
                     top_p, frequency_penalty, presence_penalty, stream,
-                    is_default, status, create_time, create_date, update_time, update_date
+                    is_recommended, status, create_time, create_date, update_time, update_date
                 ) VALUES (
                     %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
                 )
@@ -205,7 +187,7 @@ class AgentService:
                 data.get("temperature", 0.1), data.get("max_tokens", 512),
                 data.get("top_p", 0.3), data.get("frequency_penalty", 0.7),
                 data.get("presence_penalty", 0.4), data.get("stream", False),
-                data.get("is_default", False), data.get("status", "active"),
+                data.get("is_recommended", False), data.get("status", "active"),
                 current_time, current_date, current_time, current_date
             ))
 
@@ -233,26 +215,7 @@ class AgentService:
             if not existing_agent:
                 return None
 
-            # 如果设为默认，先取消同团队其他Agent的默认状态
-            if data.get("is_default", False):
-                # 使用RAGFlow的数据库模块来正确处理事务
-                import sys
-                import os
-                ragflow_path = '/ragflow'
-                if ragflow_path not in sys.path:
-                    sys.path.insert(0, ragflow_path)
-                if os.path.join(ragflow_path, 'api') not in sys.path:
-                    sys.path.insert(0, os.path.join(ragflow_path, 'api'))
-
-                try:
-                    from api.db.db_models import DB
-                    with DB.connection_context():
-                        DB.execute_sql("UPDATE agent_config SET is_default = 0 WHERE team_id = %s AND id != %s",
-                                       (existing_agent["team_id"], agent_id))
-                except ImportError:
-                    # 如果导入失败，使用普通的数据库连接
-                    update_query = "UPDATE agent_config SET is_default = 0 WHERE team_id = %s AND id != %s"
-                    cursor.execute(update_query, (existing_agent["team_id"], agent_id))
+            # 推荐状态不需要互斥，可以多个Agent同时推荐
 
             # 更新Agent
             current_time = int(datetime.now().timestamp())
@@ -284,9 +247,9 @@ class AgentService:
             if "welcome_message" in data:
                 update_fields.append("welcome_message = %s")
                 params.append(data["welcome_message"])
-            if "is_default" in data:
-                update_fields.append("is_default = %s")
-                params.append(data["is_default"])
+            if "is_recommended" in data:
+                update_fields.append("is_recommended = %s")
+                params.append(data["is_recommended"])
             if "status" in data:
                 update_fields.append("status = %s")
                 params.append(data["status"])
@@ -363,8 +326,8 @@ class AgentService:
             raise e
 
     @classmethod
-    def set_default_agent(cls, agent_id, is_default):
-        """设置默认Agent"""
+    def set_recommended_agent(cls, agent_id, is_recommended):
+        """设置推荐Agent"""
         try:
             # 使用RAGFlow的数据库模块来正确处理事务
             import sys
@@ -387,14 +350,9 @@ class AgentService:
                     columns = [desc[0] for desc in cursor.description]
                     agent = dict(zip(columns, row))
 
-                    if is_default:
-                        # 先取消同团队其他Agent的默认状态
-                        DB.execute_sql("UPDATE agent_config SET is_default = 0 WHERE team_id = %s AND id != %s",
-                                       (agent["team_id"], agent_id))
-
-                    # 更新当前Agent的默认状态
-                    DB.execute_sql("UPDATE agent_config SET is_default = %s WHERE id = %s",
-                                   (is_default, agent_id))
+                    # 直接更新当前Agent的推荐状态（推荐状态不需要互斥）
+                    DB.execute_sql("UPDATE agent_config SET is_recommended = %s WHERE id = %s",
+                                   (is_recommended, agent_id))
 
                 return True
             except ImportError:
@@ -411,14 +369,9 @@ class AgentService:
                     conn.close()
                     return False
 
-                if is_default:
-                    # 先取消同团队其他Agent的默认状态
-                    reset_query = "UPDATE agent_config SET is_default = 0 WHERE team_id = %s AND id != %s"
-                    cursor.execute(reset_query, (agent["team_id"], agent_id))
-
-                # 更新当前Agent的默认状态
-                update_query = "UPDATE agent_config SET is_default = %s WHERE id = %s"
-                cursor.execute(update_query, (is_default, agent_id))
+                # 直接更新当前Agent的推荐状态（推荐状态不需要互斥）
+                update_query = "UPDATE agent_config SET is_recommended = %s WHERE id = %s"
+                cursor.execute(update_query, (is_recommended, agent_id))
 
                 conn.commit()
                 cursor.close()
@@ -426,39 +379,40 @@ class AgentService:
                 return True
 
         except Exception as e:
-            print(f"设置默认Agent失败: {str(e)}")
+            print(f"设置推荐Agent失败: {str(e)}")
             raise e
 
     @classmethod
-    def get_team_default_agent(cls, team_id):
-        """获取团队默认Agent"""
+    def get_team_recommended_agents(cls, team_id):
+        """获取团队推荐Agent列表"""
         try:
             conn = cls._get_db_connection()
             cursor = conn.cursor(dictionary=True)
 
             query = """
-                SELECT 
+                SELECT
                     id, name, description, model_name, kb_ids,
                     system_prompt, welcome_message, status
-                FROM agent_config 
-                WHERE team_id = %s AND is_default = 1 AND status = 'active'
-                LIMIT 1
+                FROM agent_config
+                WHERE team_id = %s AND is_recommended = 1 AND status = 'active'
+                ORDER BY create_time DESC
             """
             cursor.execute(query, (team_id,))
-            agent = cursor.fetchone()
+            agents = cursor.fetchall()
 
-            if agent and agent["kb_ids"]:
-                try:
-                    kb_ids = json.loads(agent["kb_ids"]) if isinstance(agent["kb_ids"], str) else agent["kb_ids"]
-                    agent["kb_ids"] = kb_ids
-                except:
-                    agent["kb_ids"] = []
+            for agent in agents:
+                if agent and agent["kb_ids"]:
+                    try:
+                        kb_ids = json.loads(agent["kb_ids"]) if isinstance(agent["kb_ids"], str) else agent["kb_ids"]
+                        agent["kb_ids"] = kb_ids
+                    except:
+                        agent["kb_ids"] = []
 
             cursor.close()
             conn.close()
 
-            return agent
+            return agents
 
         except Exception as e:
-            print(f"获取团队默认Agent失败: {str(e)}")
+            print(f"获取团队推荐Agent失败: {str(e)}")
             raise e

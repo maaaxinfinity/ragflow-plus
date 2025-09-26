@@ -88,28 +88,28 @@ def delete_agent(agent_id):
         return error_response(str(e))
 
 
-@agent_bp.route("/<string:agent_id>/default", methods=["PUT"])
-def set_default_agent(agent_id):
-    """设置默认Agent"""
+@agent_bp.route("/<string:agent_id>/recommended", methods=["PUT"])
+def set_recommended_agent(agent_id):
+    """设置推荐Agent"""
     try:
         data = request.json
-        is_default = data.get("is_default", False)
-        
-        result = AgentService.set_default_agent(agent_id, is_default)
+        is_recommended = data.get("is_recommended", False)
+
+        result = AgentService.set_recommended_agent(agent_id, is_recommended)
         if not result:
             return error_response("Agent不存在", code=404)
-            
-        message = "已设为默认Agent" if is_default else "已取消默认Agent"
+
+        message = "已设为推荐Agent" if is_recommended else "已取消推荐Agent"
         return success_response(message=message)
     except Exception as e:
         return error_response(str(e))
 
 
-@agent_bp.route("/teams/<string:team_id>/default", methods=["GET"])
-def get_team_default_agent(team_id):
-    """获取团队默认Agent"""
+@agent_bp.route("/teams/<string:team_id>/recommended", methods=["GET"])
+def get_team_recommended_agents(team_id):
+    """获取团队推荐Agent列表"""
     try:
-        agent = AgentService.get_team_default_agent(team_id)
-        return success_response(agent, "获取团队默认Agent成功")
+        agents = AgentService.get_team_recommended_agents(team_id)
+        return success_response(agents, "获取团队推荐Agent成功")
     except Exception as e:
         return error_response(str(e))

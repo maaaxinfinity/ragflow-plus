@@ -339,15 +339,26 @@ def get():
         e, conv = ConversationService.get_by_id(conv_id)
         if not e:
             return get_data_error_result(message="Conversation not found!")
-        tenants = UserTenantService.query(user_id=current_user.id)
+        tenants = ensure_user_tenant_roles(current_user.id)
         avatar = None
-        for tenant in tenants:
-            dialog = DialogService.query(tenant_id=tenant.tenant_id, id=conv.dialog_id)
-            if dialog and len(dialog) > 0:
-                avatar = dialog[0].icon
-                break
+
+        # 检查是否是agent类型的dialog
+        if conv.dialog_id.startswith("agent_"):
+            agent_id = conv.dialog_id[6:]  # 移除"agent_"前缀
+            agent_dialog = get_agent_as_dialog(agent_id)
+            if agent_dialog:
+                avatar = agent_dialog.icon
+            else:
+                return get_json_result(data=False, message="Dialog not found!", code=settings.RetCode.DATA_ERROR)
         else:
-            return get_json_result(data=False, message="Only owner of conversation authorized for this operation.", code=settings.RetCode.OPERATING_ERROR)
+            # 原有的dialog权限检查逻辑
+            for tenant in tenants:
+                dialog = DialogService.query(tenant_id=tenant.tenant_id, id=conv.dialog_id)
+                if dialog and len(dialog) > 0:
+                    avatar = dialog[0].icon
+                    break
+            else:
+                return get_json_result(data=False, message="Only owner of conversation authorized for this operation.", code=settings.RetCode.OPERATING_ERROR)
 
         def get_value(d, k1, k2):
             return d.get(k1, d.get(k2))
@@ -405,12 +416,31 @@ def rm():
             exist, conv = ConversationService.get_by_id(cid)
             if not exist:
                 return get_data_error_result(message="Conversation not found!")
-            tenants = UserTenantService.query(user_id=current_user.id)
-            for tenant in tenants:
-                if DialogService.query(tenant_id=tenant.tenant_id, id=conv.dialog_id):
-                    break
+            tenants = ensure_user_tenant_roles(current_user.id)
+
+            # 检查是否是agent类型的dialog
+            if conv.dialog_id.startswith("agent_"):
+                agent_id = conv.dialog_id[6:]  # 移除"agent_"前缀
+                agent_dialog = get_agent_as_dialog(agent_id)
+                if not agent_dialog:
+                    return get_json_result(data=False, message="Dialog not found!", code=settings.RetCode.DATA_ERROR)
+
+                # 检查用户是否有权限访问该团队的agent
+                has_permission = False
+                for tenant in tenants:
+                    if tenant.tenant_id == agent_dialog.tenant_id:
+                        has_permission = True
+                        break
+
+                if not has_permission:
+                    return get_json_result(data=False, message="Only owner of conversation authorized for this operation.", code=settings.RetCode.OPERATING_ERROR)
             else:
-                return get_json_result(data=False, message="Only owner of conversation authorized for this operation.", code=settings.RetCode.OPERATING_ERROR)
+                # 原有的dialog权限检查逻辑
+                for tenant in tenants:
+                    if DialogService.query(tenant_id=tenant.tenant_id, id=conv.dialog_id):
+                        break
+                else:
+                    return get_json_result(data=False, message="Only owner of conversation authorized for this operation.", code=settings.RetCode.OPERATING_ERROR)
             ConversationService.delete_by_id(cid)
         return get_json_result(data=True)
     except Exception as e:

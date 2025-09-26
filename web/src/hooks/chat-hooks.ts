@@ -103,13 +103,29 @@ export const useFetchNextDialogList = () => {
       // 获取原有的 dialogs
       const { data: dialogData } = await chatService.listDialog();
 
-      // 获取管理系统的 agents
+      // 从原有dialogs中获取用户可访问的租户ID
+      let userTenants: string[] = [];
+      if (dialogData && dialogData.code === 0 && dialogData.data) {
+        const tenantIds = new Set(
+          dialogData.data.map((d: any) => d.tenant_id).filter(Boolean),
+        );
+        userTenants = Array.from(tenantIds);
+      }
+
+      // 获取管理系统的 agents，并过滤用户可访问的团队
       let managementAgents: any[] = [];
       try {
         const agentResponse = await fetch('/api/v1/agents');
         if (agentResponse.ok) {
           const agentResult = await agentResponse.json();
-          managementAgents = agentResult.data?.list || [];
+          const allAgents = agentResult.data?.list || [];
+          // 只保留用户属于的团队的agents，或者team_id为"ALL"的agents
+          managementAgents = allAgents.filter(
+            (agent: any) =>
+              agent.team_id === 'ALL' ||
+              userTenants.length === 0 ||
+              userTenants.includes(agent.team_id),
+          );
         }
       } catch (error) {
         console.warn('Failed to fetch management agents:', error);
@@ -119,7 +135,7 @@ export const useFetchNextDialogList = () => {
       const convertedAgents: IDialog[] = managementAgents.map((agent: any) => ({
         id: `agent_${agent.id}`, // 添加前缀避免ID冲突
         dialog_id: `agent_${agent.id}`,
-        name: agent.is_default ? `${agent.name} ⭐` : agent.name, // 为默认agent添加星标
+        name: agent.is_recommended ? `${agent.name} ⭐` : agent.name, // 为推荐agent添加星标
         description: agent.description || '',
         icon: agent.avatar || '/assets/agent/Agent-icon.svg', // 使用agent头像或默认图标
         kb_ids: agent.kb_ids || [],
@@ -152,7 +168,7 @@ export const useFetchNextDialogList = () => {
         // 标记为来自管理系统
         source: 'management',
         team_id: agent.team_id,
-        is_default: agent.is_default, // 保留默认标识
+        is_recommended: agent.is_recommended, // 保留推荐标识
       }));
 
       let allDialogs: IDialog[] = [];

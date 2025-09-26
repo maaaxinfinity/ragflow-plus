@@ -38,7 +38,7 @@ def create_agent_config_table():
             frequency_penalty DECIMAL(3,2) DEFAULT 0.7,
             presence_penalty DECIMAL(3,2) DEFAULT 0.4,
             stream BOOLEAN DEFAULT FALSE,
-            is_default BOOLEAN DEFAULT FALSE,
+            is_recommended BOOLEAN DEFAULT FALSE,
             status VARCHAR(20) DEFAULT 'active',
             create_time BIGINT,
             create_date DATETIME,
@@ -47,7 +47,7 @@ def create_agent_config_table():
             INDEX idx_team_id (team_id),
             INDEX idx_name (name),
             INDEX idx_status (status),
-            INDEX idx_is_default (is_default)
+            INDEX idx_is_recommended (is_recommended)
         );
         """
 

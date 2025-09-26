@@ -54,7 +54,11 @@
       <div class="table-wrapper">
         <el-table :data="tableData" style="width: 100%" @sort-change="handleSortChange">
           <el-table-column prop="name" label="Agent名称" min-width="150" show-overflow-tooltip />
-          <el-table-column prop="team_name" label="所属团队" width="120" />
+          <el-table-column label="所属团队" width="120">
+            <template #default="{ row }">
+              {{ row.team_id === 'ALL' ? '所有团队' : row.team_name }}
+            </template>
+          </el-table-column>
           <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
           <el-table-column prop="model_name" label="使用模型" width="150" />
           <el-table-column prop="kb_names" label="关联知识库" min-width="200">
@@ -72,13 +76,24 @@
               </span>
             </template>
           </el-table-column>
-          <el-table-column prop="is_default" label="默认状态" width="100" align="center">
+          <el-table-column prop="is_recommended" label="推荐" width="80" align="center">
             <template #default="scope">
-              <el-switch
-                v-model="scope.row.is_default"
-                @change="handleDefaultChange(scope.row)"
-                :loading="scope.row.updating"
-              />
+              <el-icon
+                v-if="scope.row.is_recommended"
+                :size="18"
+                style="color: #f39c12; cursor: pointer"
+                @click="handleRecommendedChange(scope.row)"
+              >
+                <StarFilled />
+              </el-icon>
+              <el-icon
+                v-else
+                :size="18"
+                style="color: #ddd; cursor: pointer"
+                @click="handleRecommendedChange(scope.row)"
+              >
+                <Star />
+              </el-icon>
             </template>
           </el-table-column>
           <el-table-column prop="status" label="状态" width="80" align="center">
@@ -145,6 +160,10 @@
                     placeholder="选择团队"
                     style="width: 100%"
                   >
+                    <el-option
+                      label="所有团队"
+                      value="ALL"
+                    />
                     <el-option
                       v-for="team in teamList"
                       :key="team.id"
@@ -460,7 +479,7 @@
 <script lang="ts" setup>
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Search, Refresh, Edit, Delete } from '@element-plus/icons-vue'
+import { Plus, Search, Refresh, Edit, Delete, Star, StarFilled } from '@element-plus/icons-vue'
 import { usePagination } from '@@/composables/usePagination'
 
 defineOptions({
@@ -534,7 +553,7 @@ const formData = reactive({
   kb_ids: [] as string[],
   system_prompt: '你是一个学术领域的专家，请根据知识库的内容来尽可能详细的回答问题。\n        以下是知识库：\n        {knowledge}\n        以上是知识库。',
   welcome_message: '',
-  is_default: false,
+  is_recommended: false,
   status: 'active',
   language: 'zh-CN',
   empty_response: '抱歉，我无法理解您的问题。',
@@ -700,7 +719,7 @@ const handleEdit = (row: any) => {
     frequency_penalty: row.frequency_penalty || 0.7,
     presence_penalty: row.presence_penalty || 0.4,
     stream: row.stream || false,
-    is_default: row.is_default,
+    is_recommended: row.is_recommended,
     status: row.status
   })
   dialogVisible.value = true
@@ -742,46 +761,36 @@ const handleDelete = async (row: any) => {
   }
 }
 
-// 默认状态变化
-const handleDefaultChange = async (row: any) => {
+// 推荐状态变化
+const handleRecommendedChange = async (row: any) => {
   row.updating = true
   try {
-    // 调用真实API设置默认状态
-    const response = await fetch(`/api/v1/agents/${row.id}/default`, {
+    // 切换推荐状态
+    const newRecommendedStatus = !row.is_recommended
+
+    // 调用真实API设置推荐状态
+    const response = await fetch(`/api/v1/agents/${row.id}/recommended`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        is_default: row.is_default
+        is_recommended: newRecommendedStatus
       })
     })
 
     if (response.ok) {
       const result = await response.json()
       if (result.code === 0) {
-        if (row.is_default) {
-          // 如果设为默认，需要取消同团队其他Agent的默认状态
-          tableData.value.forEach(item => {
-            if (item.team_id === row.team_id && item.id !== row.id) {
-              item.is_default = false
-            }
-          })
-        }
-        ElMessage.success(row.is_default ? '已设为默认Agent' : '已取消默认Agent')
+        row.is_recommended = newRecommendedStatus
+        ElMessage.success(newRecommendedStatus ? '已设为推荐Agent' : '已取消推荐Agent')
       } else {
-        // 恢复原状态
-        row.is_default = !row.is_default
         ElMessage.error(result.message || '操作失败')
       }
     } else {
-      // 恢复原状态
-      row.is_default = !row.is_default
       ElMessage.error('操作失败')
     }
   } catch (error) {
-    // 恢复原状态
-    row.is_default = !row.is_default
     ElMessage.error('操作失败')
   } finally {
     row.updating = false
@@ -829,7 +838,7 @@ const handleSubmit = async () => {
         frequency_penalty: formData.frequency_penalty,
         presence_penalty: formData.presence_penalty,
         stream: formData.stream,
-        is_default: formData.is_default,
+        is_recommended: formData.is_recommended,
         status: formData.status
       })
     })
@@ -895,7 +904,7 @@ const resetForm = () => {
     kb_ids: [],
     system_prompt: '你是一个学术领域的专家，请根据知识库的内容来尽可能详细的回答问题。\n        以下是知识库：\n        {knowledge}\n        以上是知识库。',
     welcome_message: '',
-    is_default: false,
+    is_recommended: false,
     status: 'active'
   })
   formRef.value?.resetFields()

@@ -137,15 +137,17 @@ def get():
                 return get_data_error_result(message="Dialog not found!")
 
             # 简化的权限检查：检查用户是否有权限访问该团队的agent
-            tenants = ensure_user_tenant_roles(current_user.id)
-            has_permission = False
-            for tenant in tenants:
-                if tenant.tenant_id == agent_dialog.tenant_id:
-                    has_permission = True
-                    break
+            # 如果agent的team_id是"ALL"，则所有用户都可以访问
+            if agent_dialog.tenant_id != 'ALL':
+                tenants = ensure_user_tenant_roles(current_user.id)
+                has_permission = False
+                for tenant in tenants:
+                    if tenant.tenant_id == agent_dialog.tenant_id:
+                        has_permission = True
+                        break
 
-            if not has_permission:
-                return get_json_result(data=False, message="Only owner of dialog authorized for this operation.", code=settings.RetCode.OPERATING_ERROR)
+                if not has_permission:
+                    return get_json_result(data=False, message="Only owner of dialog authorized for this operation.", code=settings.RetCode.OPERATING_ERROR)
 
             # 转换为dict并处理知识库信息
             dia = agent_dialog.to_dict()
@@ -217,7 +219,8 @@ def get_agent_as_dialog(agent_id):
                     id, name, team_id as tenant_id, description, avatar, model_name as llm_id,
                     kb_ids, system_prompt, welcome_message, language, empty_response,
                     similarity_threshold, vector_similarity_weight, top_n,
-                    temperature, is_default, status, create_time, create_date, update_time, update_date
+                    temperature, max_tokens, top_p, frequency_penalty, presence_penalty,
+                    is_recommended, status, create_time, create_date, update_time, update_date
                 FROM agent_config
                 WHERE id = %s AND status = 'active'
             """, (agent_id,))
@@ -256,7 +259,7 @@ def get_agent_as_dialog(agent_id):
             'create_date': agent.get('create_date', ''),
             'update_time': agent.get('update_time', 0),
             'update_date': agent.get('update_date', ''),
-            'is_default': agent.get('is_default', False),
+            'is_recommended': agent.get('is_recommended', False),
             'prompt_config': {
                 'prologue': agent.get('welcome_message', '你好，我是AI助手'),
                 'quote': True,
@@ -265,7 +268,11 @@ def get_agent_as_dialog(agent_id):
                 'empty_response': agent.get('empty_response', '抱歉，我无法回答您的问题。')
             },
             'llm_setting': {
-                'temperature': agent.get('temperature', 0.1)
+                'temperature': agent.get('temperature', 0.1),
+                'max_tokens': agent.get('max_tokens', 512),
+                'top_p': agent.get('top_p', 0.3),
+                'frequency_penalty': agent.get('frequency_penalty', 0.7),
+                'presence_penalty': agent.get('presence_penalty', 0.4)
             }
         }
 
