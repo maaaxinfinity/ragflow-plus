@@ -3,8 +3,8 @@
     <el-card v-loading="loading" shadow="never">
       <div class="page-header">
         <div class="header-left">
-          <h2>默认 Agent 配置</h2>
-          <p class="page-description">为团队成员配置默认的对话 Agent，便于在对话页面直接使用</p>
+          <h2>Agent 配置管理</h2>
+          <p class="page-description">为团队成员配置对话 Agent，支持设置推荐Agent并在对话页面显示星标</p>
         </div>
         <div class="header-right">
           <el-button type="primary" :icon="Plus" @click="handleCreate">
@@ -235,14 +235,14 @@
               />
             </el-form-item>
 
-            <el-form-item label="设为默认">
+            <el-form-item label="设为推荐">
               <el-switch
-                v-model="formData.is_default"
+                v-model="formData.is_recommended"
                 active-text="是"
                 inactive-text="否"
               />
               <div class="form-tip">
-                设为默认后，该团队成员在对话页面将优先使用此Agent
+                设为推荐后，该团队成员在对话页面将看到此Agent带有星标
               </div>
             </el-form-item>
 
