@@ -325,35 +325,60 @@ export const useSetConversation = () => {
                 kbIds = [];
               }
 
+              // Parse agent's structured data from management system
+              let llmSetting = {};
+              let promptConfig = {};
+              try {
+                llmSetting = agent.llm_setting
+                  ? JSON.parse(agent.llm_setting)
+                  : {};
+                promptConfig = agent.prompt_config
+                  ? JSON.parse(agent.prompt_config)
+                  : {};
+              } catch (error) {
+                console.warn(
+                  '[DEBUG] Failed to parse agent structured data:',
+                  error,
+                );
+              }
+
               // Create RAGFlow dialog from agent - use CURRENT user's tenant_id for permissions
               const ragflowDialog = {
                 name: agent.name,
                 description: agent.description || '',
-                icon: agent.avatar || '/assets/agent/Agent-icon.svg',
+                icon: agent.icon || '/assets/agent/Agent-icon.svg', // Use icon field from agent_config
                 kb_ids: kbIds,
-                language: agent.language || 'zh',
-                llm_id: agent.model_name || '',
+                language: agent.language === 'Chinese' ? 'Chinese' : 'English',
+                llm_id: agent.llm_id || agent.model_name || '', // Use llm_id field from agent_config
                 llm_setting: {
-                  temperature: parseFloat(agent.temperature) || 0.1,
-                  max_tokens: parseInt(agent.max_tokens) || 512,
-                  top_p: parseFloat(agent.top_p) || 0.3,
-                  frequency_penalty: parseFloat(agent.frequency_penalty) || 0.7,
-                  presence_penalty: parseFloat(agent.presence_penalty) || 0.4,
+                  temperature: llmSetting.temperature || 0.1,
+                  max_tokens: llmSetting.max_tokens || 512,
+                  top_p: llmSetting.top_p || 0.3,
+                  frequency_penalty: llmSetting.frequency_penalty || 0.7,
+                  presence_penalty: llmSetting.presence_penalty || 0.4,
                 },
+                prompt_type: agent.prompt_type || 'simple',
                 prompt_config: {
-                  system: agent.system_prompt || '',
-                  prologue: agent.welcome_message || '',
+                  system: promptConfig.system || '',
+                  prologue:
+                    promptConfig.prologue ||
+                    "Hi! I'm your assistant, what can I do for you?",
                   empty_response:
-                    agent.empty_response || '抱歉，我无法回答您的问题。',
-                  parameters: [{ key: 'knowledge', optional: false }],
+                    promptConfig.empty_response ||
+                    'Sorry! No relevant content was found in the knowledge base!',
+                  parameters: promptConfig.parameters || [
+                    { key: 'knowledge', optional: false },
+                  ],
                 },
                 // Use current user's tenant_id instead of agent's team_id to avoid permission issues
                 tenant_id: currentTenantId,
-                similarity_threshold:
-                  parseFloat(agent.similarity_threshold) || 0.2,
-                vector_similarity_weight:
-                  parseFloat(agent.vector_similarity_weight) || 0.3,
-                top_n: parseInt(agent.top_n) || 8,
+                similarity_threshold: agent.similarity_threshold || 0.2,
+                vector_similarity_weight: agent.vector_similarity_weight || 0.3,
+                top_n: agent.top_n || 6,
+                top_k: agent.top_k || 1024,
+                do_refer: agent.do_refer || '1',
+                rerank_id: agent.rerank_id || '',
+                status: '1', // Always set status to valid for new dialogs
               };
 
               console.log(

@@ -12,43 +12,39 @@ def create_agent_config_table():
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # 创建agent_config表的SQL
+        # 创建agent_config表的SQL - 与RAGFlow Dialog模型保持一致
         create_table_sql = """
         CREATE TABLE IF NOT EXISTS agent_config (
-            id VARCHAR(36) PRIMARY KEY,
-            name VARCHAR(255) NOT NULL,
-            team_id VARCHAR(36) NOT NULL,
-            description TEXT,
-            avatar TEXT,
-            model_name VARCHAR(255),
-            kb_ids JSON,
-            system_prompt TEXT,
-            welcome_message TEXT,
-            language VARCHAR(10) DEFAULT 'zh-CN',
-            empty_response TEXT,
-            similarity_threshold DECIMAL(3,2) DEFAULT 0.2,
-            vector_similarity_weight DECIMAL(3,2) DEFAULT 0.3,
-            vector_keywords_weight DECIMAL(3,2) DEFAULT 0.7,
-            top_n INT DEFAULT 8,
-            rerank_enabled BOOLEAN DEFAULT FALSE,
-            rerank_model VARCHAR(255),
-            temperature DECIMAL(3,2) DEFAULT 0.1,
-            max_tokens INT DEFAULT 512,
-            top_p DECIMAL(3,2) DEFAULT 0.3,
-            frequency_penalty DECIMAL(3,2) DEFAULT 0.7,
-            presence_penalty DECIMAL(3,2) DEFAULT 0.4,
-            stream BOOLEAN DEFAULT FALSE,
-            is_recommended BOOLEAN DEFAULT FALSE,
-            status VARCHAR(20) DEFAULT 'active',
-            create_time BIGINT,
-            create_date DATETIME,
-            update_time BIGINT,
-            update_date DATETIME,
+            id VARCHAR(32) PRIMARY KEY,
+            name VARCHAR(255) NOT NULL COMMENT 'agent name',
+            team_id VARCHAR(32) NOT NULL COMMENT 'tenant_id in RAGFlow',
+            user_id VARCHAR(255) NULL COMMENT 'user_id',
+            created_by VARCHAR(255) NULL COMMENT 'created by user',
+            description TEXT NULL COMMENT 'agent description',
+            icon TEXT NULL COMMENT 'icon base64 string (corresponds to avatar)',
+            language VARCHAR(32) DEFAULT 'Chinese' COMMENT 'Chinese|English',
+            llm_id VARCHAR(128) NOT NULL COMMENT 'default llm ID (corresponds to model_name)',
+            llm_setting JSON NULL COMMENT 'llm settings object',
+            prompt_type VARCHAR(16) DEFAULT 'simple' COMMENT 'simple|advanced',
+            prompt_config JSON NULL COMMENT 'prompt configuration object',
+            similarity_threshold FLOAT DEFAULT 0.2,
+            vector_similarity_weight FLOAT DEFAULT 0.3,
+            top_n INT DEFAULT 6,
+            top_k INT DEFAULT 1024,
+            do_refer VARCHAR(1) DEFAULT '1' COMMENT 'reference insertion flag',
+            rerank_id VARCHAR(128) NULL COMMENT 'rerank model ID',
+            kb_ids JSON NULL COMMENT 'knowledge base IDs',
+            is_recommended BOOLEAN DEFAULT FALSE COMMENT 'recommended agent flag (extension beyond RAGFlow)',
+            status VARCHAR(1) DEFAULT '1' COMMENT '1:valid, 0:invalid',
+            create_time BIGINT NULL,
+            create_date DATETIME NULL,
+            update_time BIGINT NULL,
+            update_date DATETIME NULL,
             INDEX idx_team_id (team_id),
             INDEX idx_name (name),
             INDEX idx_status (status),
             INDEX idx_is_recommended (is_recommended)
-        );
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         """
 
         print("创建agent_config表...")

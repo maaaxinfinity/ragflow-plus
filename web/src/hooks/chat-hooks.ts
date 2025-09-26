@@ -160,44 +160,71 @@ export const useFetchNextDialogList = () => {
       }
 
       // 转换 agents 为 dialog 格式
-      const convertedAgents: IDialog[] = managementAgents.map((agent: any) => ({
-        id: `agent_${agent.id}`, // 添加前缀避免ID冲突
-        dialog_id: `agent_${agent.id}`,
-        name: agent.is_recommended ? `${agent.name} ⭐` : agent.name, // 为推荐agent添加星标
-        description: agent.description || '',
-        icon: agent.avatar || '/assets/agent/Agent-icon.svg', // 使用agent头像或默认图标
-        kb_ids: agent.kb_ids || [],
-        kb_names: agent.kb_names || [],
-        language: 'zh',
-        llm_id: agent.model_name || '',
-        llm_setting: {
-          temperature: agent.temperature || 0.1,
-          max_tokens: agent.max_tokens || 512,
-          top_p: agent.top_p || 0.3,
-          frequency_penalty: agent.frequency_penalty || 0.7,
-          presence_penalty: agent.presence_penalty || 0.4,
-        },
-        llm_setting_type: 'Precise',
-        prompt_config: {
-          system: agent.system_prompt || '',
-          prologue: agent.welcome_message || '',
-          empty_response: agent.empty_response || '抱歉，我无法回答您的问题。',
-          parameters: [{ key: 'knowledge', optional: false }],
-        },
-        prompt_type: 'simple',
-        status: agent.status || 'active',
-        tenant_id: agent.team_id || '',
-        create_date: agent.create_date || '',
-        create_time: agent.create_time || Date.now(),
-        update_date: agent.update_date || '',
-        update_time: agent.update_time || Date.now(),
-        vector_similarity_weight: agent.vector_similarity_weight || 0.3,
-        similarity_threshold: agent.similarity_threshold || 0.2,
-        // 标记为来自管理系统
-        source: 'management',
-        team_id: agent.team_id,
-        is_recommended: agent.is_recommended, // 保留推荐标识
-      }));
+      const convertedAgents: IDialog[] = managementAgents.map((agent: any) => {
+        // 解析llm_setting JSON字符串（如果存在）
+        let llmSetting = {};
+        try {
+          llmSetting = agent.llm_setting ? JSON.parse(agent.llm_setting) : {};
+        } catch (e) {
+          console.warn('Failed to parse llm_setting for agent:', agent.id);
+        }
+
+        // 解析prompt_config JSON字符串（如果存在）
+        let promptConfig = {};
+        try {
+          promptConfig = agent.prompt_config
+            ? JSON.parse(agent.prompt_config)
+            : {};
+        } catch (e) {
+          console.warn('Failed to parse prompt_config for agent:', agent.id);
+        }
+
+        return {
+          id: `agent_${agent.id}`, // 添加前缀避免ID冲突
+          dialog_id: `agent_${agent.id}`,
+          name: agent.is_recommended ? `${agent.name} ⭐` : agent.name, // 为推荐agent添加星标
+          description: agent.description || '',
+          icon: agent.avatar || '/assets/agent/Agent-icon.svg', // 使用agent头像或默认图标
+          kb_ids: agent.kb_ids || [],
+          kb_names: agent.kb_names || [],
+          language: agent.language === 'Chinese' ? 'zh' : 'en',
+          llm_id: agent.model_name || '',
+          llm_setting: {
+            temperature: llmSetting.temperature || 0.1,
+            max_tokens: llmSetting.max_tokens || 512,
+            top_p: llmSetting.top_p || 0.3,
+            frequency_penalty: llmSetting.frequency_penalty || 0.7,
+            presence_penalty: llmSetting.presence_penalty || 0.4,
+          },
+          llm_setting_type: 'Precise',
+          prompt_config: {
+            system: promptConfig.system || '',
+            prologue: promptConfig.prologue || '',
+            empty_response:
+              promptConfig.empty_response || '抱歉，我无法回答您的问题。',
+            parameters: promptConfig.parameters || [
+              { key: 'knowledge', optional: false },
+            ],
+          },
+          prompt_type: agent.prompt_type || 'simple',
+          similarity_threshold: agent.similarity_threshold || 0.2,
+          vector_similarity_weight: agent.vector_similarity_weight || 0.3,
+          top_n: agent.top_n || 6,
+          top_k: agent.top_k || 1024,
+          do_refer: agent.do_refer || '1',
+          rerank_id: agent.rerank_id || '',
+          status: agent.status === '1' ? '1' : '0', // 转换状态格式
+          tenant_id: agent.team_id || '',
+          create_date: agent.create_date || '',
+          create_time: agent.create_time || Date.now(),
+          update_date: agent.update_date || '',
+          update_time: agent.update_time || Date.now(),
+          // 标记为来自管理系统
+          source: 'management',
+          team_id: agent.team_id,
+          is_recommended: agent.is_recommended, // 保留推荐标识
+        };
+      });
 
       let allDialogs: IDialog[] = [];
 

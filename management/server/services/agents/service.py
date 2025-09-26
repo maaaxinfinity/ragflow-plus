@@ -53,12 +53,11 @@ class AgentService:
             offset = (page - 1) * size
             list_query = f"""
                 SELECT
-                    a.id, a.name, a.team_id, a.description, a.avatar, a.model_name,
-                    a.kb_ids, a.system_prompt, a.welcome_message, a.language,
-                    a.empty_response, a.similarity_threshold, a.vector_similarity_weight,
-                    a.vector_keywords_weight, a.top_n, a.rerank_enabled, a.rerank_model,
-                    a.temperature, a.max_tokens, a.top_p, a.frequency_penalty,
-                    a.presence_penalty, a.stream, a.is_recommended, a.status,
+                    a.id, a.name, a.team_id, a.description,
+                    a.icon as avatar, a.llm_id as model_name, a.kb_ids,
+                    a.language, a.llm_setting, a.prompt_type, a.prompt_config,
+                    a.similarity_threshold, a.vector_similarity_weight, a.top_n, a.top_k,
+                    a.do_refer, a.rerank_id, a.is_recommended, a.status,
                     a.create_time, a.create_date, a.update_time, a.update_date,
                     t.name as team_name
                 FROM agent_config a
@@ -71,7 +70,7 @@ class AgentService:
             cursor.execute(list_query, params)
             agents = cursor.fetchall()
 
-            # 处理知识库名称
+            # 处理知识库名称和数据转换
             for agent in agents:
                 if agent["kb_ids"]:
                     try:
@@ -92,6 +91,27 @@ class AgentService:
                 # 格式化日期
                 if isinstance(agent.get("create_date"), datetime):
                     agent["create_date"] = agent["create_date"].strftime("%Y-%m-%d %H:%M:%S")
+
+                # 为了向后兼容，添加一些扁平化字段（web前端可能需要）
+                try:
+                    if agent.get("llm_setting"):
+                        llm_setting = json.loads(agent["llm_setting"]) if isinstance(agent["llm_setting"], str) else agent["llm_setting"]
+                        agent["temperature"] = llm_setting.get("temperature", 0.1)
+                        agent["max_tokens"] = llm_setting.get("max_tokens", 512)
+                        agent["top_p"] = llm_setting.get("top_p", 0.3)
+                        agent["frequency_penalty"] = llm_setting.get("frequency_penalty", 0.7)
+                        agent["presence_penalty"] = llm_setting.get("presence_penalty", 0.4)
+                except:
+                    pass
+
+                try:
+                    if agent.get("prompt_config"):
+                        prompt_config = json.loads(agent["prompt_config"]) if isinstance(agent["prompt_config"], str) else agent["prompt_config"]
+                        agent["system_prompt"] = prompt_config.get("system", "")
+                        agent["welcome_message"] = prompt_config.get("prologue", "")
+                        agent["empty_response"] = prompt_config.get("empty_response", "")
+                except:
+                    pass
 
             cursor.close()
             conn.close()
@@ -114,9 +134,12 @@ class AgentService:
 
             query = """
                 SELECT
-                    a.id, a.name, a.team_id, a.description, a.avatar, a.model_name,
-                    a.kb_ids, a.system_prompt, a.welcome_message, a.is_recommended,
-                    a.status, a.create_time, a.create_date, a.update_time, a.update_date,
+                    a.id, a.name, a.team_id, a.description,
+                    a.icon as avatar, a.llm_id as model_name, a.kb_ids,
+                    a.language, a.llm_setting, a.prompt_type, a.prompt_config,
+                    a.similarity_threshold, a.vector_similarity_weight, a.top_n, a.top_k,
+                    a.do_refer, a.rerank_id, a.is_recommended, a.status,
+                    a.create_time, a.create_date, a.update_time, a.update_date,
                     t.name as team_name
                 FROM agent_config a
                 LEFT JOIN tenant t ON a.team_id = t.id
@@ -156,7 +179,7 @@ class AgentService:
 
             # 推荐状态不需要互斥，可以多个Agent同时推荐
 
-            # 创建Agent
+            # 创建Agent - 与RAGFlow Dialog模型保持一致
             agent_id = get_uuid()
             current_time = int(datetime.now().timestamp())
             current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -167,31 +190,54 @@ class AgentService:
             user_id = data.get("user_id") or data.get("created_by")
             created_by = user_id
 
+            # 构建llm_setting对象
+            llm_setting = {
+                "temperature": data.get("temperature", 0.1),
+                "top_p": data.get("top_p", 0.3),
+                "frequency_penalty": data.get("frequency_penalty", 0.7),
+                "presence_penalty": data.get("presence_penalty", 0.4),
+                "max_tokens": data.get("max_tokens", 512)
+            }
+            llm_setting_json = json.dumps(llm_setting)
+
+            # 构建prompt_config对象
+            prompt_config = {
+                "system": data.get("system_prompt", ""),
+                "prologue": data.get("welcome_message", "Hi! I'm your assistant, what can I do for you?"),
+                "parameters": [{"key": "knowledge", "optional": False}],
+                "empty_response": data.get("empty_response", "Sorry! No relevant content was found in the knowledge base!")
+            }
+            prompt_config_json = json.dumps(prompt_config)
+
+            # 处理语言字段
+            language = data.get("language", "Chinese")
+            if language == "zh-CN":
+                language = "Chinese"
+            elif language == "en-US":
+                language = "English"
+
+            # 处理状态字段
+            status = "1" if data.get("status", "active") == "active" else "0"
+
             insert_query = """
                 INSERT INTO agent_config (
-                    id, name, team_id, user_id, created_by, description, avatar, model_name, kb_ids,
-                    system_prompt, welcome_message, language, empty_response,
-                    similarity_threshold, vector_similarity_weight, vector_keywords_weight,
-                    top_n, rerank_enabled, rerank_model, temperature, max_tokens,
-                    top_p, frequency_penalty, presence_penalty, stream,
+                    id, name, team_id, user_id, created_by, description, icon, language,
+                    llm_id, llm_setting, prompt_type, prompt_config, similarity_threshold,
+                    vector_similarity_weight, top_n, top_k, do_refer, rerank_id, kb_ids,
                     is_recommended, status, create_time, create_date, update_time, update_date
                 ) VALUES (
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
                 )
             """
             cursor.execute(insert_query, (
                 agent_id, data["name"], data["team_id"], user_id, created_by,
                 data.get("description", ""), data.get("avatar", "/assets/agent/Agent-icon.svg"),
-                data["model_name"], kb_ids_json, data.get("system_prompt", ""),
-                data.get("welcome_message", ""), data.get("language", "zh-CN"),
-                data.get("empty_response") or "抱歉，我无法理解您的问题。",
+                language, data.get("model_name"), llm_setting_json,
+                data.get("prompt_type", "simple"), prompt_config_json,
                 data.get("similarity_threshold", 0.2), data.get("vector_similarity_weight", 0.3),
-                data.get("vector_keywords_weight", 0.7), data.get("top_n", 8),
-                data.get("rerank_enabled", False), data.get("rerank_model", ""),
-                data.get("temperature", 0.1), data.get("max_tokens", 512),
-                data.get("top_p", 0.3), data.get("frequency_penalty", 0.7),
-                data.get("presence_penalty", 0.4), data.get("stream", True),
-                data.get("is_recommended", False), data.get("status", "active"),
+                data.get("top_n", 6), data.get("top_k", 1024), data.get("do_refer", "1"),
+                data.get("rerank_model", ""), kb_ids_json,
+                data.get("is_recommended", False), status,
                 current_time, current_date, current_time, current_date
             ))
 
@@ -221,7 +267,7 @@ class AgentService:
 
             # 推荐状态不需要互斥，可以多个Agent同时推荐
 
-            # 更新Agent
+            # 更新Agent - 与RAGFlow Dialog模型保持一致
             current_time = int(datetime.now().timestamp())
             current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -237,26 +283,65 @@ class AgentService:
                 update_fields.append("description = %s")
                 params.append(data["description"])
             if "avatar" in data:
-                update_fields.append("avatar = %s")
+                update_fields.append("icon = %s")
                 params.append(data["avatar"])
             if "model_name" in data:
-                update_fields.append("model_name = %s")
+                update_fields.append("llm_id = %s")
                 params.append(data["model_name"])
             if kb_ids_json is not None:
                 update_fields.append("kb_ids = %s")
                 params.append(kb_ids_json)
-            if "system_prompt" in data:
-                update_fields.append("system_prompt = %s")
-                params.append(data["system_prompt"])
-            if "welcome_message" in data:
-                update_fields.append("welcome_message = %s")
-                params.append(data["welcome_message"])
+            if "language" in data:
+                language = data["language"]
+                if language == "zh-CN":
+                    language = "Chinese"
+                elif language == "en-US":
+                    language = "English"
+                update_fields.append("language = %s")
+                params.append(language)
+            # 处理llm_setting更新
+            if any(key in data for key in ["temperature", "top_p", "frequency_penalty", "presence_penalty", "max_tokens"]):
+                llm_setting = {
+                    "temperature": data.get("temperature", 0.1),
+                    "top_p": data.get("top_p", 0.3),
+                    "frequency_penalty": data.get("frequency_penalty", 0.7),
+                    "presence_penalty": data.get("presence_penalty", 0.4),
+                    "max_tokens": data.get("max_tokens", 512)
+                }
+                update_fields.append("llm_setting = %s")
+                params.append(json.dumps(llm_setting))
+            # 处理prompt_config更新
+            if any(key in data for key in ["system_prompt", "welcome_message", "empty_response"]):
+                prompt_config = {
+                    "system": data.get("system_prompt", ""),
+                    "prologue": data.get("welcome_message", "Hi! I'm your assistant, what can I do for you?"),
+                    "parameters": [{"key": "knowledge", "optional": False}],
+                    "empty_response": data.get("empty_response", "Sorry! No relevant content was found in the knowledge base!")
+                }
+                update_fields.append("prompt_config = %s")
+                params.append(json.dumps(prompt_config))
+            if "similarity_threshold" in data:
+                update_fields.append("similarity_threshold = %s")
+                params.append(data["similarity_threshold"])
+            if "vector_similarity_weight" in data:
+                update_fields.append("vector_similarity_weight = %s")
+                params.append(data["vector_similarity_weight"])
+            if "top_n" in data:
+                update_fields.append("top_n = %s")
+                params.append(data["top_n"])
+            if "top_k" in data:
+                update_fields.append("top_k = %s")
+                params.append(data["top_k"])
+            if "rerank_model" in data:
+                update_fields.append("rerank_id = %s")
+                params.append(data["rerank_model"])
             if "is_recommended" in data:
                 update_fields.append("is_recommended = %s")
                 params.append(data["is_recommended"])
             if "status" in data:
+                status = "1" if data["status"] == "active" else "0"
                 update_fields.append("status = %s")
-                params.append(data["status"])
+                params.append(status)
 
             update_fields.extend(["update_time = %s", "update_date = %s"])
             params.extend([current_time, current_date, agent_id])
