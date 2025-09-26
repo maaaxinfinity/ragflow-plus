@@ -23,6 +23,7 @@ RUN uv pip install -i https://pypi.tuna.tsinghua.edu.cn/simple transformers==4.4
 # 复制 Docker 相关文件
 COPY docker/service_conf.yaml.template ./conf/service_conf.yaml.template
 COPY docker/entrypoint.sh ./entrypoint.sh
+COPY docker/migration.sql ./docker/migration.sql
 
 RUN chmod +x ./entrypoint.sh
 

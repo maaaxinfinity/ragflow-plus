@@ -6,6 +6,8 @@ CREATE TABLE IF NOT EXISTS agent_config (
     id VARCHAR(36) PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     team_id VARCHAR(36) NOT NULL,
+    user_id VARCHAR(32) NULL,
+    created_by VARCHAR(32) NULL,
     description TEXT,
     model_name VARCHAR(255),
     kb_ids JSON,
@@ -34,5 +36,7 @@ CREATE TABLE IF NOT EXISTS agent_config (
     INDEX idx_team_id (team_id),
     INDEX idx_name (name),
     INDEX idx_status (status),
-    INDEX idx_is_default (is_default)
+    INDEX idx_is_default (is_default),
+    INDEX idx_user_id (user_id),
+    INDEX idx_created_by (created_by)
 );
