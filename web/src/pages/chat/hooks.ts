@@ -278,17 +278,37 @@ export const useSetConversation = () => {
             const agent = allAgents.find((a: any) => a.id === agentId);
 
             if (agent) {
-              // Create RAGFlow dialog from agent
+              // Parse kb_ids properly - it's heavily escaped in the database
+              let kbIds = [];
+              try {
+                if (agent.kb_ids) {
+                  // Try to parse the heavily escaped JSON string
+                  let kbIdsStr = agent.kb_ids;
+                  // Remove extra escaping layers
+                  while (
+                    typeof kbIdsStr === 'string' &&
+                    kbIdsStr.startsWith('"') &&
+                    kbIdsStr.endsWith('"')
+                  ) {
+                    kbIdsStr = JSON.parse(kbIdsStr);
+                  }
+                  if (Array.isArray(kbIdsStr)) {
+                    kbIds = kbIdsStr;
+                  } else if (typeof kbIdsStr === 'string') {
+                    kbIds = JSON.parse(kbIdsStr);
+                  }
+                }
+              } catch (error) {
+                console.warn('Failed to parse kb_ids:', agent.kb_ids, error);
+                kbIds = [];
+              }
+
+              // Create RAGFlow dialog from agent - use simplified structure
               const ragflowDialog = {
-                dialog_id: '', // Let system generate new ID
                 name: agent.name,
                 description: agent.description || '',
                 icon: agent.avatar || '/assets/agent/Agent-icon.svg',
-                kb_ids: agent.kb_ids
-                  ? typeof agent.kb_ids === 'string'
-                    ? JSON.parse(agent.kb_ids)
-                    : agent.kb_ids
-                  : [],
+                kb_ids: kbIds,
                 language: agent.language || 'zh',
                 llm_id: agent.model_name || '',
                 llm_setting: {
@@ -298,26 +318,18 @@ export const useSetConversation = () => {
                   frequency_penalty: parseFloat(agent.frequency_penalty) || 0.7,
                   presence_penalty: parseFloat(agent.presence_penalty) || 0.4,
                 },
-                llm_setting_type: 'Precise',
                 prompt_config: {
                   system: agent.system_prompt || '',
                   prologue: agent.welcome_message || '',
                   empty_response:
                     agent.empty_response || '抱歉，我无法回答您的问题。',
-                  parameters: [{ key: 'knowledge', optional: false }],
                 },
-                prompt_type: 'simple',
-                status: agent.status || 'active',
                 tenant_id: agent.team_id || '',
                 similarity_threshold:
                   parseFloat(agent.similarity_threshold) || 0.2,
                 vector_similarity_weight:
                   parseFloat(agent.vector_similarity_weight) || 0.3,
-                vector_keywords_weight:
-                  parseFloat(agent.vector_keywords_weight) || 0.7,
                 top_n: parseInt(agent.top_n) || 8,
-                rerank_enabled: !!agent.rerank_enabled,
-                rerank_model: agent.rerank_model || '',
               };
 
               console.log(
@@ -338,8 +350,6 @@ export const useSetConversation = () => {
                   actualDialogId = dialogResult.data.dialog_id;
                   console.log('[DEBUG] Using new dialog ID:', actualDialogId);
                 } else {
-                  // Fallback: keep original agent format
-                  actualDialogId = dialogId;
                   console.log(
                     '[DEBUG] No dialog ID returned, using agent format',
                   );
@@ -349,8 +359,6 @@ export const useSetConversation = () => {
                   '[DEBUG] Failed to create RAGFlow dialog:',
                   dialogResult,
                 );
-                // Try using the original agent format anyway
-                actualDialogId = dialogId;
               }
             }
           }
