@@ -214,10 +214,10 @@ def get_agent_as_dialog(agent_id):
         with DB.connection_context():
             cursor = DB.execute_sql("""
                 SELECT
-                    id, name, team_id as tenant_id, description, model_name as llm_id,
+                    id, name, team_id as tenant_id, description, avatar, model_name as llm_id,
                     kb_ids, system_prompt, welcome_message, language, empty_response,
                     similarity_threshold, vector_similarity_weight, top_n,
-                    temperature, status, create_time, create_date, update_time, update_date
+                    temperature, is_default, status, create_time, create_date, update_time, update_date
                 FROM agent_config
                 WHERE id = %s AND status = 'active'
             """, (agent_id,))
@@ -244,6 +244,7 @@ def get_agent_as_dialog(agent_id):
             'name': agent['name'],
             'tenant_id': agent['tenant_id'],
             'description': agent.get('description', ''),
+            'icon': agent.get('avatar', '/assets/agent/Agent-icon.svg'),
             'llm_id': agent.get('llm_id', ''),
             'kb_ids': kb_ids,
             'language': agent.get('language', 'Chinese'),
@@ -255,11 +256,13 @@ def get_agent_as_dialog(agent_id):
             'create_date': agent.get('create_date', ''),
             'update_time': agent.get('update_time', 0),
             'update_date': agent.get('update_date', ''),
+            'is_default': agent.get('is_default', False),
             'prompt_config': {
                 'prologue': agent.get('welcome_message', '你好，我是AI助手'),
                 'quote': True,
-                'parameters': [],
-                'system': agent.get('system_prompt', '')
+                'parameters': [{'key': 'knowledge', 'optional': False}],
+                'system': agent.get('system_prompt', ''),
+                'empty_response': agent.get('empty_response', '抱歉，我无法回答您的问题。')
             },
             'llm_setting': {
                 'temperature': agent.get('temperature', 0.1)

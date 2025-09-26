@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 import jwt
 from dotenv import load_dotenv
-from flask import Flask, request
+from flask import Flask, request, send_from_directory
 from flask_cors import CORS
 from routes import register_routes
 
@@ -73,6 +73,14 @@ def login():
     token = generate_token(username)
 
     return {"code": 0, "data": {"token": token}, "message": "登录成功"}
+
+
+# 添加静态文件服务路由
+@app.route('/assets/<path:filename>')
+def serve_static(filename):
+    """提供静态文件服务"""
+    static_dir = os.path.join(os.path.dirname(__file__), '..', 'web', 'public', 'assets')
+    return send_from_directory(static_dir, filename)
 
 
 def init_database():
