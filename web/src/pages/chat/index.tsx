@@ -378,7 +378,7 @@ const Chat = () => {
                             cursor: 'pointer',
                             fontSize: '14px',
                             color: '#fadb14',
-                            transform: 'rotate(45deg)',
+                            transform: 'rotate(-90deg)',
                           }}
                           onClick={(e) => {
                             e.stopPropagation();
@@ -392,7 +392,7 @@ const Chat = () => {
                             fontSize: '14px',
                             color: '#d9d9d9',
                             opacity: 0.6,
-                            transform: 'rotate(45deg)',
+                            transform: 'rotate(-90deg)',
                           }}
                           onClick={(e) => {
                             e.stopPropagation();
@@ -424,6 +424,23 @@ const Chat = () => {
                 </Card>
               ))}
             </Spin>
+            {conversationList.length > 0 && (
+              <Flex justify="center" style={{ paddingTop: 16 }}>
+                <DeleteOutlined
+                  style={{
+                    color: '#ff4d4f',
+                    fontSize: '16px',
+                    cursor: 'pointer',
+                    padding: '8px',
+                    borderRadius: '4px',
+                    border: '1px solid #ff4d4f',
+                    backgroundColor: 'transparent',
+                  }}
+                  title="删除所有未书签对话"
+                  onClick={handleDeleteAllConversations}
+                />
+              </Flex>
+            )}
           </Flex>
         </Flex>
       </Flex>
@@ -482,34 +499,6 @@ const Chat = () => {
           </Flex>
         </Modal>
       )} */}
-
-      {/* 删除所有对话按钮 - 固定在页面底部 */}
-      {conversationList.length > 0 && (
-        <div
-          style={{
-            position: 'fixed',
-            bottom: '20px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            zIndex: 1000,
-            backgroundColor: '#fff',
-            borderRadius: '50%',
-            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-            padding: '12px',
-            border: '1px solid #f0f0f0',
-          }}
-        >
-          <DeleteOutlined
-            style={{
-              color: '#ff4d4f',
-              fontSize: '18px',
-              cursor: 'pointer',
-            }}
-            title="删除所有未书签对话"
-            onClick={handleDeleteAllConversations}
-          />
-        </div>
-      )}
     </Flex>
   );
 };
