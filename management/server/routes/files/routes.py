@@ -1,7 +1,7 @@
 from io import BytesIO
 
 from flask import current_app, jsonify, request, send_file
-from services.files.service import batch_delete_files, create_folder, delete_file, download_file_from_minio, get_all_file_ids, get_file_info, get_files_list, get_file_tree, handle_chunk_upload, merge_chunks, upload_files_to_server
+from services.files.service import batch_delete_files, create_folder, delete_file, download_file_from_minio, get_all_file_ids, get_file_info, get_files_list, get_file_tree, handle_chunk_upload, merge_chunks, upload_files_to_server, upload_files_with_folder_structure
 from services.files.utils import FileType
 
 from .. import files_bp
@@ -222,3 +222,34 @@ def merge_upload():
         return jsonify(result), result.get("code", 500)
 
     return jsonify(result)
+
+
+@files_bp.route("/upload_with_structure", methods=["POST"])
+def upload_files_with_structure():
+    """
+    批量上传文件并保留目录结构
+    """
+    try:
+        if "files" not in request.files:
+            return jsonify({"code": 400, "message": "未选择文件", "data": None}), 400
+
+        files = request.files.getlist("files")
+        file_paths = request.form.getlist("file_paths")
+        parent_paths = request.form.getlist("parent_paths")
+        preserve_structure = request.form.get("preserve_structure", "false").lower() == "true"
+
+        if not preserve_structure:
+            # 如果不保留结构，使用普通上传
+            upload_result = upload_files_to_server(files)
+            return jsonify(upload_result)
+
+        if len(files) != len(file_paths):
+            return jsonify({"code": 400, "message": "文件数量与路径数量不匹配", "data": None}), 400
+
+        # 处理文件上传并保留目录结构
+        result = upload_files_with_folder_structure(files, file_paths, parent_paths)
+
+        return jsonify(result)
+
+    except Exception as e:
+        return jsonify({"code": 500, "message": f"上传失败: {str(e)}", "data": None}), 500

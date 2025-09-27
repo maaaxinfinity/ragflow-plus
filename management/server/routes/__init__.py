@@ -9,6 +9,7 @@ files_bp = Blueprint('files', __name__, url_prefix='/api/v1/files')
 knowledgebase_bp = Blueprint('knowledgebases', __name__, url_prefix='/api/v1/knowledgebases')
 conversation_bp = Blueprint('conversation', __name__, url_prefix='/api/v1/conversation')
 agent_bp = Blueprint('agents', __name__, url_prefix='/api/v1/agents')
+models_bp = Blueprint('models', __name__, url_prefix='/api/v1/management/llm')
 
 # 导入路由
 from .users.routes import *
@@ -18,6 +19,7 @@ from .files.routes import *
 from .knowledgebases.routes import *
 from .conversation.routes import *
 from .agents.routes import *
+from .models.routes import *
 
 
 def register_routes(app):
@@ -29,3 +31,4 @@ def register_routes(app):
     app.register_blueprint(knowledgebase_bp)
     app.register_blueprint(conversation_bp)
     app.register_blueprint(agent_bp)
+    app.register_blueprint(models_bp)

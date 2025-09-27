@@ -7,20 +7,57 @@ import type * as Models from '@/common/apis/models/type'
 
 export function useAllUserModels() {
   const loading = ref(false)
-  const userModels = ref<Models.UserModelData[]>([])
+  const userModels = ref<Models.GlobalLlmModel[]>([])
 
   const fetchAllUserModels = async () => {
     loading.value = true
     try {
       const response = await ModelsApi.getAllUserModelsApi()
       if (response.code === 0) {
-        userModels.value = response.data || []
+        // 处理全局模型管理API的响应
+        if (Array.isArray(response.data)) {
+          // 如果返回的是GlobalLlmModel数组（新的管理员API）
+          userModels.value = response.data.map(model => ({
+            ...model,
+            model_name: model.llm_name,
+            usage_count: 0, // 初始值，后续可通过额外API获取
+            is_global: true
+          }))
+        } else {
+          // 如果返回的是MyLlmCollection格式（兼容旧格式）
+          const modelList: Models.GlobalLlmModel[] = []
+          Object.entries(response.data || {}).forEach(([factoryName, factoryData]) => {
+            factoryData.llm.forEach(model => {
+              modelList.push({
+                id: model.id,
+                fid: model.fid,
+                llm_factory: factoryName,
+                llm_name: model.llm_name,
+                model_type: model.model_type,
+                max_tokens: model.max_tokens,
+                api_key: '', // 管理面板不显示完整API Key
+                api_base: '',
+                available: model.available,
+                status: model.status,
+                tags: model.tags,
+                create_date: model.create_date,
+                create_time: model.create_time,
+                update_date: model.update_date,
+                update_time: model.update_time,
+                model_name: model.llm_name,
+                usage_count: model.used_token || 0,
+                is_global: false
+              })
+            })
+          })
+          userModels.value = modelList
+        }
       } else {
-        ElMessage.error(response.message || '获取用户模型失败')
+        ElMessage.error(response.message || '获取全局模型失败')
       }
     } catch (error) {
-      ElMessage.error('获取用户模型失败')
-      console.error('获取用户模型失败:', error)
+      ElMessage.error('获取全局模型失败')
+      console.error('获取全局模型失败:', error)
     } finally {
       loading.value = false
     }

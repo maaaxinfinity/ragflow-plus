@@ -5,25 +5,77 @@ export interface BaseResponseData {
   message?: string
 }
 
-// 用户模型配置数据
-export interface UserModelData {
-  id: string
+// 全局模型配置数据结构 (管理员权限)
+export interface GlobalLlmModel {
+  id: number
+  fid: string
+  llm_factory: string
+  llm_name: string
+  model_type: string
+  max_tokens: number
+  api_key: string
+  api_base?: string
+  available: boolean
+  status: string
+  tags: string
+  create_date: string
+  create_time: number
+  update_date: string
+  update_time: number
+  // 管理面板显示字段
+  model_name?: string
+  usage_count?: number
+  total_users?: number // 使用此模型的用户数量
+  is_global?: boolean // 是否为全局模型
+}
+
+// 用户模型使用统计
+export interface UserModelUsage {
   user_id: string
   user_name: string
   tenant_id: string
   tenant_name: string
-  model_name: string
-  model_type: string // chat, embedding, image2text, etc.
-  llm_factory: string // OpenAI, Azure, etc.
-  api_key: string
-  api_base?: string
-  max_tokens?: number
+  llm_factory: string
+  llm_name: string
+  used_token: number
   last_used?: string
-  usage_count: number
-  create_time: string
-  update_time: string
-  available: boolean
 }
+
+// 保留原有的LlmModel以兼容web端格式
+export interface LlmModel {
+  name: string
+  type: string
+  used_token: number
+  available: boolean
+  create_date: string
+  create_time: number
+  fid: string
+  id: number
+  llm_name: string
+  max_tokens: number
+  model_type: string
+  status: string
+  tags: string
+  update_date: string
+  update_time: number
+  // 为管理面板显示添加的字段
+  llm_factory?: string
+  model_name?: string
+  usage_count?: number
+  user_name?: string
+  tenant_name?: string
+  api_key?: string
+  api_base?: string
+  last_used?: string
+}
+
+export interface MyLlmValue {
+  llm: LlmModel[]
+  tags: string
+}
+
+// my_llms接口返回的数据格式 Record<string, MyLlmValue>
+export type MyLlmCollection = Record<string, MyLlmValue>
 
 // 模型工厂数据
 export interface ModelFactoryData {
@@ -64,22 +116,23 @@ export interface GetUserModelsParams {
 }
 
 export interface AddUserModelParams {
-  user_id: string
   llm_factory: string
+  llm_name: string
+  model_type: string
+  api_base?: string
   api_key: string
-  llm_name?: string
-  model_type?: string
-  base_url?: string
+  max_tokens: number
+  is_global?: boolean // 是否为全局模型（管理员权限）
+  // 以下为各供应商特定字段，根据实际需要动态包含
+  [key: string]: any
 }
 
 export interface DeleteUserModelParams {
-  user_id: string
   llm_factory: string
   llm_name: string
 }
 
 export interface DeleteUserFactoryParams {
-  user_id: string
   llm_factory: string
 }
 
@@ -99,7 +152,7 @@ export interface SetUserApiKeyParams {
 
 // API响应数据接口
 export interface AllUserModelsResponseData extends BaseResponseData {
-  data: UserModelData[]
+  data: GlobalLlmModel[] | MyLlmCollection
 }
 
 export interface ModelFactoriesResponseData extends BaseResponseData {
@@ -115,4 +168,21 @@ export interface UserModelsResponseData extends BaseResponseData {
 
 export interface GlobalDefaultModelsResponseData extends BaseResponseData {
   data: GlobalDefaultModelsData
+}
+
+// 新增的API参数和响应类型
+
+export interface TestModelConnectionParams {
+  llm_factory: string
+  llm_name?: string
+  model_type?: string
+  api_key: string
+  api_base?: string
+  [key: string]: any // 支持不同供应商的特定参数
+}
+
+export interface PromoteUserModelParams {
+  user_model_id: string
+  llm_factory: string
+  llm_name: string
 }

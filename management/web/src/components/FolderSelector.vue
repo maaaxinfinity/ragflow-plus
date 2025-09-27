@@ -249,20 +249,78 @@ const findNodeData = (nodeId: string, nodes: FileTreeNode[]): FileTreeNode | nul
   return null
 }
 
+// 获取节点的所有子节点ID
+const getAllChildrenIds = (node: FileTreeNode): string[] => {
+  const ids: string[] = []
+  if (node.children) {
+    node.children.forEach(child => {
+      ids.push(child.id)
+      ids.push(...getAllChildrenIds(child))
+    })
+  }
+  return ids
+}
+
+// 获取节点的所有父节点ID
+const getAllParentIds = (nodeId: string, nodes: FileTreeNode[], parentIds: string[] = []): string[] => {
+  for (const node of nodes) {
+    if (node.id === nodeId) {
+      return parentIds
+    }
+    if (node.children) {
+      const found = getAllParentIds(nodeId, node.children, [...parentIds, node.id])
+      if (found.length > 0 || node.children.some(child => child.id === nodeId)) {
+        return [...parentIds, node.id]
+      }
+    }
+  }
+  return []
+}
+
+// 检查是否为父子关系
+const isParentChild = (parentId: string, childId: string): boolean => {
+  const parentNode = findNodeData(parentId, treeData.value)
+  if (!parentNode) return false
+
+  const childrenIds = getAllChildrenIds(parentNode)
+  return childrenIds.includes(childId)
+}
+
+// 智能过滤选中项（如果选择了父文件夹，则移除其子文件）
+const filterSmartSelection = (checkedKeys: string[]): string[] => {
+  const filteredKeys: string[] = []
+
+  checkedKeys.forEach(key => {
+    // 检查是否有父节点也被选中
+    const parentIds = getAllParentIds(key, treeData.value)
+    const hasParentSelected = parentIds.some(parentId => checkedKeys.includes(parentId))
+
+    // 如果没有父节点被选中，则保留这个节点
+    if (!hasParentSelected) {
+      filteredKeys.push(key)
+    }
+  })
+
+  return filteredKeys
+}
+
 // 树节点勾选事件
 const handleTreeCheck = (data: FileTreeNode, checkState: any) => {
   const checkedKeys = checkState.checkedKeys as string[]
   const halfCheckedKeys = checkState.halfCheckedKeys as string[]
-  
+
+  // 智能过滤选中项
+  const smartFilteredKeys = filterSmartSelection(checkedKeys)
+
   // 更新选中项列表
   selectedItems.value = []
-  
-  // 添加完全选中的节点
-  checkedKeys.forEach(key => {
+
+  // 添加智能过滤后的节点
+  smartFilteredKeys.forEach(key => {
     const nodeData = findNodeData(key, treeData.value)
     if (nodeData) {
       // 检查是否允许选择该类型
-      if ((nodeData.type === 'folder' && props.allowFolders) || 
+      if ((nodeData.type === 'folder' && props.allowFolders) ||
           (nodeData.type === 'file' && props.allowFiles)) {
         selectedItems.value.push({
           id: nodeData.id,
@@ -274,6 +332,15 @@ const handleTreeCheck = (data: FileTreeNode, checkState: any) => {
       }
     }
   })
+
+  // 如果启用了智能过滤，更新树的选中状态
+  if (smartFilteredKeys.length !== checkedKeys.length) {
+    nextTick(() => {
+      if (treeRef.value) {
+        treeRef.value.setCheckedKeys(smartFilteredKeys)
+      }
+    })
+  }
 }
 
 // 树节点点击事件

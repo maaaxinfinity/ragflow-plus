@@ -1,9 +1,9 @@
 <script lang="ts" setup>
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, computed, watch } from 'vue'
 import type { FormInstance } from 'element-plus'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { usePagination } from '@/common/composables/usePagination'
-import { Refresh, Search, View, User, Delete, Setting, Plus } from '@element-plus/icons-vue'
+import { Refresh, Search, View, User, Delete, Setting, Plus, Key, Connection } from '@element-plus/icons-vue'
 import {
   useAllUserModels,
   useModelFactories,
@@ -26,17 +26,37 @@ defineOptions({
   name: 'ModelSetting'
 })
 
+// Management专注于全局管理所有模型，包括：
+// 1. 之前用户在web端创建的模型配置
+// 2. 通过management新创建的全局模型
+// 3. 所有模型的统一管理和维护
+
 const loading = ref<boolean>(false)
 const { paginationData, handleCurrentChange, handleSizeChange } = usePagination()
 
-// 使用管理员级别的hooks
-const { userModels: allUserModels, fetchAllUserModels } = useAllUserModels()
-const { factories: allFactories, fetchFactories } = useModelFactories()
+// 全局模型管理 - 包含所有用户创建的模型和管理员创建的全局模型
+const { userModels: allModels, fetchAllUserModels } = useAllUserModels()
+const { factories: availableFactories, fetchFactories } = useModelFactories()
 const { addModel } = useAddUserModel()
 const { deleteModel } = useDeleteUserModel()
 const { deleteFactory } = useDeleteUserFactory()
 const { setApiKey } = useSetUserApiKey()
 const { defaults: globalDefaults, fetchDefaults, setDefaults } = useGlobalDefaultModels()
+
+// 添加一个新的hook来获取原有web用户的模型数据
+const { userModels: webUserModels, fetchUserModels: fetchWebUserModels } = useUserModels()
+
+// 合并所有模型数据：管理员创建的全局模型 + 用户在web端创建的模型
+const allModelData = computed(() => {
+  const globalModels = allModels.value || []
+  const webModels = webUserModels.value || []
+
+  // 合并数据，标记来源
+  return [
+    ...globalModels.map(model => ({ ...model, source: 'global' })),
+    ...webModels.map(model => ({ ...model, source: 'user_web' }))
+  ]
+})
 
 // 搜索表单
 const searchFormRef = ref<FormInstance | null>(null)
@@ -88,22 +108,22 @@ const statusOptions = [
 
 // 过滤后的表格数据
 const filteredTableData = computed(() => {
-  let filtered = allUserModels.value || []
+  let filtered = allModelData.value || []
 
   // 应用搜索过滤
   if (searchData.user_name) {
     filtered = filtered.filter(item =>
-      item.user_name.toLowerCase().includes(searchData.user_name.toLowerCase())
+      item.user_name?.toLowerCase().includes(searchData.user_name.toLowerCase())
     )
   }
   if (searchData.tenant_name) {
     filtered = filtered.filter(item =>
-      item.tenant_name.toLowerCase().includes(searchData.tenant_name.toLowerCase())
+      item.tenant_name?.toLowerCase().includes(searchData.tenant_name.toLowerCase())
     )
   }
   if (searchData.model_name) {
     filtered = filtered.filter(item =>
-      item.model_name.toLowerCase().includes(searchData.model_name.toLowerCase())
+      (item.model_name || item.llm_name)?.toLowerCase().includes(searchData.model_name.toLowerCase())
     )
   }
   if (searchData.model_type) {
@@ -138,17 +158,12 @@ const currentViewModel = ref<any>(null)
 const addModelFormRef = ref<FormInstance | null>(null)
 const addModelForm = reactive<Record<string, any>>({
   // 基础字段
-  user_id: '',
-  user_name: '',
   llm_factory: '',
   api_key: '',
   api_base: '',
   llm_name: '',
   model_type: '',
-  // 高级配置字段
-  temperature: 0.7,
-  max_tokens: 4096,
-  timeout: 30000
+  max_tokens: 4096
 })
 
 // 获取当前选择供应商的配置
@@ -199,14 +214,15 @@ const globalDefaultsForm = reactive({
   img2txt_id: ''
 })
 
-// 获取表格数据
+// 获取表格数据 - 包括所有模型数据
 async function getTableData() {
   loading.value = true
   try {
     await Promise.all([
-      fetchAllUserModels(),
-      fetchFactories(),
-      fetchDefaults()
+      fetchAllUserModels(), // 获取管理员创建的全局模型
+      fetchWebUserModels(), // 获取用户在web端创建的模型
+      fetchFactories(), // 获取可用的模型工厂
+      fetchDefaults() // 获取全局默认设置
     ])
   } finally {
     loading.value = false
@@ -244,9 +260,8 @@ function handleDeleteModel(row: any) {
     }
   ).then(async () => {
     const success = await deleteModel({
-      user_id: row.user_id,
       llm_factory: row.llm_factory,
-      llm_name: row.model_name
+      llm_name: row.model_name || row.llm_name
     })
     if (success) {
       getTableData()
@@ -274,9 +289,8 @@ function handleBatchDelete() {
   ).then(async () => {
     const promises = multipleSelection.value.map(row =>
       deleteModel({
-        user_id: row.user_id,
         llm_factory: row.llm_factory,
-        llm_name: row.model_name
+        llm_name: row.model_name || row.llm_name
       })
     )
     await Promise.all(promises)
@@ -288,12 +302,12 @@ function handleBatchDelete() {
 
 // 添加模型
 function handleAddModel() {
-  addModelForm.user_id = ''
-  addModelForm.user_name = ''
   addModelForm.llm_factory = ''
   addModelForm.api_key = ''
-  addModelForm.base_url = ''
+  addModelForm.api_base = ''
   addModelForm.model_type = ''
+  addModelForm.llm_name = ''
+  addModelForm.max_tokens = 4096
   addModelDialogVisible.value = true
 }
 
@@ -308,32 +322,19 @@ async function submitAddModel() {
         ? 'image2text'
         : addModelForm.model_type
 
-      // 构建基础提交数据
+      // 构建基础提交数据（管理员全局模型格式）
       const submitData: Record<string, any> = {
-        user_id: addModelForm.user_id,
         llm_factory: addModelForm.llm_factory,
-        llm_name: addModelForm.llm_name,
         model_type: modelType,
-        max_tokens: addModelForm.max_tokens,
-        // 高级配置
-        temperature: addModelForm.temperature,
-        timeout: addModelForm.timeout
+        is_global: true // 管理面板创建的都是全局模型
       }
 
-      // 动态添加供应商特定字段（排除vision字段）
+      // 动态添加供应商特定字段
       currentProviderFields.value.forEach(field => {
         if (field.name !== 'vision' && addModelForm[field.name] !== undefined && addModelForm[field.name] !== '') {
           submitData[field.name] = addModelForm[field.name]
         }
       })
-
-      // 添加通用字段
-      if (addModelForm.api_key) {
-        submitData.api_key = addModelForm.api_key
-      }
-      if (addModelForm.api_base) {
-        submitData.api_base = addModelForm.api_base
-      }
 
       console.info('提交模型配置数据:', submitData)
 
@@ -365,19 +366,145 @@ async function submitGlobalDefaults() {
 
 // 测试连接
 const testLoading = ref(false)
-function testConnection() {
-  addModelFormRef.value?.validate((valid) => {
+async function testConnection() {
+  if (!addModelFormRef.value) return
+
+  await addModelFormRef.value.validate(async (valid) => {
     if (valid) {
       testLoading.value = true
-      // 这里应该调用测试API连接的接口
-      setTimeout(() => {
-        ElMessage.success('模型连接测试成功！')
+      try {
+        // 构建测试数据
+        const testData: Record<string, any> = {
+          llm_factory: addModelForm.llm_factory,
+          model_type: addModelForm.model_type
+        }
+
+        // 添加供应商特定字段
+        currentProviderFields.value.forEach(field => {
+          if (addModelForm[field.name] !== undefined && addModelForm[field.name] !== '') {
+            testData[field.name] = addModelForm[field.name]
+          }
+        })
+
+        // 调用真实的测试API
+        const response = await fetch('/api/v1/models/test', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(testData)
+        })
+
+        const result = await response.json()
+
+        if (result.code === 0) {
+          ElMessage.success('模型连接测试成功！')
+        } else {
+          ElMessage.error(`连接测试失败: ${result.message}`)
+        }
+      } catch (error) {
+        console.error('模型测试失败:', error)
+        ElMessage.error('连接测试失败，请检查网络连接')
+      } finally {
         testLoading.value = false
-      }, 2000)
+      }
     } else {
       ElMessage.warning('请先填写必填字段')
     }
   })
+}
+
+// 个人默认模型设置
+const personalDefaultsDialogVisible = ref(false)
+const personalDefaultsForm = reactive({
+  default_llm_id: '',
+  default_embedding_id: '',
+  default_asr_id: '',
+  default_image2text_id: ''
+})
+
+// 显示个人默认设置
+function showPersonalDefaults() {
+  // 获取当前用户的默认设置
+  personalDefaultsForm.default_llm_id = ''
+  personalDefaultsForm.default_embedding_id = ''
+  personalDefaultsForm.default_asr_id = ''
+  personalDefaultsForm.default_image2text_id = ''
+  personalDefaultsDialogVisible.value = true
+}
+
+// 将用户模型升级为全局模型
+async function promoteToGlobalModel(row: any) {
+  ElMessageBox.confirm(
+    `确定要将用户 "${row.user_name}" 的模型 "${row.model_name || row.llm_name}" 升级为全局模型吗？升级后所有用户都可以使用此模型。`,
+    '升级为全局模型',
+    {
+      confirmButtonText: '确定升级',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }
+  ).then(async () => {
+    try {
+      const response = await fetch('/api/v1/management/llm/promote', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          user_model_id: row.id,
+          llm_factory: row.llm_factory,
+          llm_name: row.llm_name || row.model_name
+        })
+      })
+
+      const result = await response.json()
+      if (result.code === 0) {
+        ElMessage.success('模型升级成功')
+        getTableData() // 重新获取数据
+      } else {
+        ElMessage.error(`升级失败: ${result.message}`)
+      }
+    } catch (error) {
+      console.error('升级模型失败:', error)
+      ElMessage.error('升级失败，请稍后重试')
+    }
+  }).catch(() => {
+    ElMessage.info('已取消升级')
+  })
+}
+
+// 测试已有模型的连接
+async function testModelConnection(row: any) {
+  const testData = {
+    llm_factory: row.llm_factory,
+    llm_name: row.llm_name || row.model_name,
+    model_type: row.model_type,
+    api_key: row.api_key,
+    api_base: row.api_base
+  }
+
+  testLoading.value = true
+  try {
+    const response = await fetch('/api/v1/models/test', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(testData)
+    })
+
+    const result = await response.json()
+    if (result.code === 0) {
+      ElMessage.success(`模型 "${row.model_name || row.llm_name}" 连接测试成功`)
+    } else {
+      ElMessage.error(`连接测试失败: ${result.message}`)
+    }
+  } catch (error) {
+    console.error('模型测试失败:', error)
+    ElMessage.error('连接测试失败，请检查网络连接')
+  } finally {
+    testLoading.value = false
+  }
 }
 
 // 表格多选
@@ -406,14 +533,7 @@ function maskApiKey(apiKey: string) {
 // 表单验证规则
 const addModelRules = computed(() => {
   const baseRules: Record<string, any> = {
-    user_id: [{ required: true, message: '请输入用户ID', trigger: 'blur' }],
-    llm_factory: [{ required: true, message: '请选择模型供应商', trigger: 'change' }],
-    model_type: [{ required: true, message: '请选择模型类型', trigger: 'change' }],
-    llm_name: [{ required: true, message: '请输入模型名称', trigger: 'blur' }],
-    max_tokens: [
-      { required: true, message: '请输入最大令牌数', trigger: 'blur' },
-      { type: 'number', min: 0, message: '最大令牌数不能小于0', trigger: 'blur' }
-    ]
+    llm_factory: [{ required: true, message: '请选择模型供应商', trigger: 'change' }]
   }
 
   // 动态添加供应商特定字段的验证规则
@@ -433,13 +553,6 @@ const addModelRules = computed(() => {
     }
   })
 
-  // 特殊处理：Azure OpenAI中API Key可选
-  if (addModelForm.llm_factory === 'azure_openai') {
-    baseRules.api_key = [{ required: false, message: '请输入API Key', trigger: 'blur' }]
-  } else {
-    baseRules.api_key = [{ required: true, message: '请输入API Key', trigger: 'blur' }]
-  }
-
   return baseRules
 })
 
@@ -454,13 +567,13 @@ onMounted(() => {
     <el-card shadow="never" class="header-wrapper">
       <div class="header-content">
         <div class="header-left">
-          <h2>模型设置管理</h2>
-          <p>管理所有用户的AI模型供应商及其模型配置</p>
+          <h2>全局模型管理</h2>
+          <p>统一管理所有AI模型配置，包括用户创建的模型和全局模型</p>
         </div>
         <div class="header-right">
           <el-space>
             <el-button type="primary" :icon="Plus" @click="handleAddModel">
-              添加模型配置
+              添加全局模型
             </el-button>
             <el-button type="success" :icon="Setting" @click="showGlobalDefaults">
               全局默认设置
@@ -529,9 +642,33 @@ onMounted(() => {
       <div class="table-wrapper">
         <el-table :data="paginatedTableData" @selection-change="handleSelectionChange">
           <el-table-column type="selection" width="50" align="center" />
-          <el-table-column prop="user_name" label="用户名称" align="center" width="120" />
-          <el-table-column prop="tenant_name" label="租户名称" align="center" width="120" />
-          <el-table-column prop="model_name" label="模型名称" align="center" width="150" />
+
+          <!-- 模型来源标识 -->
+          <el-table-column label="来源" align="center" width="100">
+            <template #default="{ row }">
+              <el-tag :type="row.source === 'global' ? 'primary' : (row.is_global ? 'success' : 'info')">
+                {{ row.source === 'global' ? '管理员' : (row.is_global ? '全局模型' : '用户创建') }}
+              </el-tag>
+            </template>
+          </el-table-column>
+
+          <!-- 用户信息 -->
+          <el-table-column prop="user_name" label="用户名称" align="center" width="120">
+            <template #default="{ row }">
+              {{ row.user_name || (row.source === 'global' ? '管理员' : '-') }}
+            </template>
+          </el-table-column>
+          <el-table-column prop="tenant_name" label="租户名称" align="center" width="120">
+            <template #default="{ row }">
+              {{ row.tenant_name || '-' }}
+            </template>
+          </el-table-column>
+
+          <el-table-column prop="model_name" label="模型名称" align="center" width="150">
+            <template #default="{ row }">
+              {{ row.model_name || row.llm_name }}
+            </template>
+          </el-table-column>
           <el-table-column prop="model_type" label="类型" align="center" width="100">
             <template #default="{ row }">
               <el-tag>{{ getTypeLabel(row.model_type) }}</el-tag>
@@ -557,10 +694,30 @@ onMounted(() => {
           </el-table-column>
           <el-table-column prop="last_used" label="最后使用" align="center" width="150" />
           <el-table-column prop="create_time" label="创建时间" align="center" width="150" />
-          <el-table-column fixed="right" label="操作" width="150" align="center">
+          <el-table-column fixed="right" label="操作" width="250" align="center">
             <template #default="{ row }">
               <el-button type="primary" text bg size="small" :icon="View" @click="handleViewModel(row)">
                 查看
+              </el-button>
+              <el-button
+                type="info"
+                text bg
+                size="small"
+                :icon="Connection"
+                @click="testModelConnection(row)"
+                :loading="testLoading"
+              >
+                测试
+              </el-button>
+              <!-- 升级用户模型为全局模型的按钮 -->
+              <el-button
+                v-if="row.source === 'user_web' && !row.is_global"
+                type="success"
+                text bg
+                size="small"
+                @click="promoteToGlobalModel(row)"
+              >
+                升级为全局
               </el-button>
               <el-button type="danger" text bg size="small" :icon="Delete" @click="handleDeleteModel(row)">
                 删除
@@ -613,10 +770,6 @@ onMounted(() => {
     <!-- 添加模型配置对话框 -->
     <el-dialog v-model="addModelDialogVisible" title="添加模型配置" width="800px" max-height="80vh">
       <el-form ref="addModelFormRef" :model="addModelForm" :rules="addModelRules" label-width="120px">
-        <el-form-item label="用户ID" prop="user_id">
-          <el-input v-model="addModelForm.user_id" placeholder="请输入用户ID" />
-        </el-form-item>
-
         <el-form-item label="供应商" prop="llm_factory">
           <el-select v-model="addModelForm.llm_factory" placeholder="请选择模型供应商" style="width: 100%">
             <el-option
@@ -628,28 +781,9 @@ onMounted(() => {
           </el-select>
         </el-form-item>
 
-        <el-form-item label="模型类型" prop="model_type">
-          <el-select v-model="addModelForm.model_type" placeholder="请选择模型类型" style="width: 100%">
-            <el-option
-              v-for="item in modelTypes"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
-            />
-          </el-select>
-        </el-form-item>
+        <!-- 模型类型在动态字段中显示 -->
 
-        <el-form-item label="模型名称" prop="llm_name">
-          <el-input v-model="addModelForm.llm_name" placeholder="请输入模型名称，如: gpt-4, text-embedding-3-large" />
-        </el-form-item>
-
-        <el-form-item label="API Base URL" prop="api_base">
-          <el-input v-model="addModelForm.api_base" placeholder="请输入API基础地址" />
-        </el-form-item>
-
-        <el-form-item label="API Key" prop="api_key">
-          <el-input v-model="addModelForm.api_key" type="password" placeholder="请输入API Key" show-password />
-        </el-form-item>
+        <!-- API Base 和 API Key 在动态字段中显示 -->
 
         <!-- 动态供应商专用字段 -->
         <template v-for="field in currentProviderFields" :key="field.name">
@@ -776,16 +910,44 @@ onMounted(() => {
     <el-dialog v-model="globalDefaultsDialogVisible" title="全局默认模型设置" width="600px">
       <el-form :model="globalDefaultsForm" label-width="120px">
         <el-form-item label="默认聊天模型">
-          <el-input v-model="globalDefaultsForm.llm_id" placeholder="请输入默认聊天模型ID" />
+          <el-select v-model="globalDefaultsForm.llm_id" placeholder="请选择默认聊天模型" style="width: 100%">
+            <el-option
+              v-for="model in allModelData.filter(m => m.model_type === 'chat')"
+              :key="model.id || model.fid"
+              :label="`${model.model_name || model.llm_name} (${getProviderLabel(model.llm_factory)})`"
+              :value="model.id || model.fid"
+            />
+          </el-select>
         </el-form-item>
         <el-form-item label="默认嵌入模型">
-          <el-input v-model="globalDefaultsForm.embd_id" placeholder="请输入默认嵌入模型ID" />
+          <el-select v-model="globalDefaultsForm.embd_id" placeholder="请选择默认嵌入模型" style="width: 100%">
+            <el-option
+              v-for="model in allModelData.filter(m => m.model_type === 'embedding')"
+              :key="model.id || model.fid"
+              :label="`${model.model_name || model.llm_name} (${getProviderLabel(model.llm_factory)})`"
+              :value="model.id || model.fid"
+            />
+          </el-select>
         </el-form-item>
         <el-form-item label="默认语音识别模型">
-          <el-input v-model="globalDefaultsForm.asr_id" placeholder="请输入默认语音识别模型ID" />
+          <el-select v-model="globalDefaultsForm.asr_id" placeholder="请选择默认语音识别模型" style="width: 100%">
+            <el-option
+              v-for="model in allModelData.filter(m => m.model_type === 'asr')"
+              :key="model.id || model.fid"
+              :label="`${model.model_name || model.llm_name} (${getProviderLabel(model.llm_factory)})`"
+              :value="model.id || model.fid"
+            />
+          </el-select>
         </el-form-item>
         <el-form-item label="默认图像识别模型">
-          <el-input v-model="globalDefaultsForm.img2txt_id" placeholder="请输入默认图像识别模型ID" />
+          <el-select v-model="globalDefaultsForm.img2txt_id" placeholder="请选择默认图像识别模型" style="width: 100%">
+            <el-option
+              v-for="model in allModelData.filter(m => m.model_type === 'image2text')"
+              :key="model.id || model.fid"
+              :label="`${model.model_name || model.llm_name} (${getProviderLabel(model.llm_factory)})`"
+              :value="model.id || model.fid"
+            />
+          </el-select>
         </el-form-item>
       </el-form>
       <template #footer>
