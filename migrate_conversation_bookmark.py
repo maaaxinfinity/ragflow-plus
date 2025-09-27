@@ -11,23 +11,23 @@ import os
 # 添加项目根目录到Python路径
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from api.db.db_models import database, Conversation
+from api.db.db_models import DB, Conversation
 from peewee import BooleanField
 
 
 def migrate_conversation_bookmark():
     """为conversation表添加is_bookmarked字段"""
     try:
-        with database.connection_context():
+        with DB.connection_context():
             # 检查字段是否已存在
-            cursor = database.execute_sql("PRAGMA table_info(conversation)")
+            cursor = DB.execute_sql("PRAGMA table_info(conversation)")
             columns = [row[1] for row in cursor.fetchall()]
 
             if 'is_bookmarked' not in columns:
                 print("添加is_bookmarked字段到conversation表...")
 
                 # 添加新字段
-                database.execute_sql(
+                DB.execute_sql(
                     "ALTER TABLE conversation ADD COLUMN is_bookmarked INTEGER DEFAULT 0"
                 )
 
@@ -36,7 +36,7 @@ def migrate_conversation_bookmark():
 
                 # 创建索引
                 try:
-                    database.execute_sql(
+                    DB.execute_sql(
                         "CREATE INDEX idx_conversation_is_bookmarked ON conversation(is_bookmarked)"
                     )
                     print("✓ 创建索引：idx_conversation_is_bookmarked")
