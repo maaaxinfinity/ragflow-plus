@@ -317,24 +317,8 @@ const addModelRules = {
   api_key: [{ required: true, message: '请输入API Key', trigger: 'blur' }]
 }
 
-  // 动态添加供应商特定字段的验证规则
-  currentProviderFields.value.forEach(field => {
-    if (field.required) {
-      const trigger = field.type === 'select' ? 'change' : 'blur'
-      baseRules[field.name] = [{
-        required: true,
-        message: `请${field.type === 'select' ? '选择' : '输入'}${field.label}`,
-        trigger
-      }]
-
-      // 数字类型添加额外验证
-      if (field.type === 'number') {
-        baseRules[field.name].push({ type: 'number', min: field.min || 0 })
-      }
-    }
-  })
-
-  return baseRules
+onMounted(() => {
+  getTableData()
 })
 </script>
 
@@ -483,7 +467,7 @@ const addModelRules = {
         <el-descriptions-item label="模型类型">{{ getTypeLabel(currentViewModel.model_type) }}</el-descriptions-item>
         <el-descriptions-item label="供应商">{{ getProviderLabel(currentViewModel.llm_factory) }}</el-descriptions-item>
         <el-descriptions-item label="API密钥">{{ maskApiKey(currentViewModel.api_key) }}</el-descriptions-item>
-        <el-descriptions-item label="API基址" span="2">{{ currentViewModel.api_base || '默认' }}</el-descriptions-item>
+        <el-descriptions-item label="API基址" :span="2">{{ currentViewModel.api_base || '默认' }}</el-descriptions-item>
         <el-descriptions-item label="最大令牌数">{{ currentViewModel.max_tokens || '默认' }}</el-descriptions-item>
         <el-descriptions-item label="使用次数">{{ currentViewModel.usage_count }}</el-descriptions-item>
         <el-descriptions-item label="状态">
@@ -493,7 +477,7 @@ const addModelRules = {
         </el-descriptions-item>
         <el-descriptions-item label="最后使用">{{ currentViewModel.last_used || '从未使用' }}</el-descriptions-item>
         <el-descriptions-item label="创建时间">{{ currentViewModel.create_time }}</el-descriptions-item>
-        <el-descriptions-item label="更新时间" span="2">{{ currentViewModel.update_time }}</el-descriptions-item>
+        <el-descriptions-item label="更新时间" :span="2">{{ currentViewModel.update_time }}</el-descriptions-item>
       </el-descriptions>
       <template #footer>
         <el-button @click="viewModelDialogVisible = false">关闭</el-button>

@@ -555,7 +555,7 @@ onMounted(() => {
             </el-descriptions-item>
             <el-descriptions-item label="使用次数">{{ currentTokenData.usage_count }}</el-descriptions-item>
             <el-descriptions-item label="最后使用">{{ currentTokenData.last_used_time || '未使用' }}</el-descriptions-item>
-            <el-descriptions-item label="创建时间" span="2">{{ currentTokenData.create_time }}</el-descriptions-item>
+            <el-descriptions-item label="创建时间" :span="2">{{ currentTokenData.create_time }}</el-descriptions-item>
           </el-descriptions>
         </div>
 

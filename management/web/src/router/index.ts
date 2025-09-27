@@ -200,7 +200,7 @@ export const constantRoutes: RouteRecordRaw[] = [
         name: "ApiSetting",
         meta: {
           title: "API设置",
-          svgIcon: "api",
+          svgIcon: "dashboard",
           affix: false,
           keepAlive: true
         }
