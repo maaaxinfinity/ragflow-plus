@@ -184,7 +184,13 @@ class DialogService(CommonService):
                         'parameters': [{'key': 'knowledge', 'optional': False}]
                     }
                     # 使用当前用户的tenant_id，而不是agent的team_id，解决权限问题
-                    self.tenant_id = current_tenant_id or agent.get('team_id', '')
+                    # 优先使用传入的tenant_id，然后是agent的创建者ID，最后才是team_id
+                    if current_tenant_id:
+                        self.tenant_id = current_tenant_id
+                    elif agent.get('created_by'):
+                        self.tenant_id = agent['created_by']  # 使用Agent创建者的ID作为tenant_id
+                    else:
+                        self.tenant_id = agent.get('team_id', '')
                     self.similarity_threshold = float(agent.get('similarity_threshold', 0.2))
                     self.vector_similarity_weight = float(agent.get('vector_similarity_weight', 0.3))
                     self.top_n = int(agent.get('top_n', 8))

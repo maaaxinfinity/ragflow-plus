@@ -79,6 +79,22 @@ def get_agent_as_dialog(agent_id, user_id=None):
     """从agent_config表获取agent并转换为dialog格式，支持权限验证"""
     try:
         from api.db.db_models import DB
+        from api.db.services.user_service import UserService
+
+        # 获取用户的主要tenant_id（用于模型权限继承）
+        user_tenant_id = None
+        if user_id:
+            try:
+                # 获取用户的第一个租户作为主要租户
+                from api.db.services.user_service import TenantService
+                tenants = TenantService.query(owner_id=user_id)
+                if tenants:
+                    user_tenant_id = tenants[0].id
+                else:
+                    # 如果用户没有自己的租户，使用user_id作为tenant_id（这是RAGFlow的常见模式）
+                    user_tenant_id = user_id
+            except:
+                user_tenant_id = user_id
 
         # 使用RAGFlow的数据库连接方式
         with DB.connection_context():
@@ -146,7 +162,7 @@ def get_agent_as_dialog(agent_id, user_id=None):
         dialog_dict = {
             'id': f"agent_{agent['id']}",
             'name': agent['name'],
-            'tenant_id': agent['tenant_id'],
+            'tenant_id': user_tenant_id or user_id,  # 使用当前用户的tenant_id，继承用户的模型权限
             'description': agent.get('description', ''),
             'icon': agent.get('avatar', '/assets/agent/Agent-icon.svg'),
             'llm_id': agent.get('llm_id', ''),
