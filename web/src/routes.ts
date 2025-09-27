@@ -105,20 +105,12 @@ const routes = [
             component: '@/pages/user-setting/setting-password',
           },
           {
-            path: '/user-setting/model',
-            component: '@/pages/user-setting/setting-model',
-          },
-          {
             path: '/user-setting/team',
             component: '@/pages/user-setting/setting-team',
           },
           {
             path: '/user-setting/system',
             component: '@/pages/user-setting/setting-system',
-          },
-          {
-            path: '/user-setting/api',
-            component: '@/pages/user-setting/setting-api',
           },
         ],
       },

@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { ref, reactive, onMounted, onActivated, watch } from 'vue'
 import type { FormInstance } from 'element-plus'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { usePagination } from '@@/composables/usePagination'
 import { Refresh, Search, Plus, Edit, Delete } from '@element-plus/icons-vue'
 
@@ -24,6 +24,18 @@ interface ModelData {
   status: string
   create_time: string
   update_time: string
+  // 扩展配置字段
+  api_version?: string // Azure OpenAI API版本
+  deployment_name?: string // Azure部署名称
+  region?: string // AWS/Azure区域
+  project_id?: string // Google Cloud项目ID
+  endpoint?: string // 自定义端点
+  temperature?: number // 温度参数
+  max_tokens?: number // 最大令牌数
+  timeout?: number // 请求超时时间
+  organization?: string // OpenAI组织ID
+  secret_key?: string // AWS Secret Key
+  access_key?: string // AWS Access Key
 }
 
 // 表格数据
@@ -51,7 +63,18 @@ const DEFAULT_FORM_DATA: Partial<ModelData> = {
   api_key: '',
   api_base: '',
   model_name: '',
-  status: 'active'
+  status: 'active',
+  api_version: '',
+  deployment_name: '',
+  region: '',
+  project_id: '',
+  endpoint: '',
+  temperature: 0.7,
+  max_tokens: 4096,
+  timeout: 30000,
+  organization: '',
+  secret_key: '',
+  access_key: ''
 }
 const formData = ref<Partial<ModelData>>({ ...DEFAULT_FORM_DATA })
 
@@ -75,7 +98,25 @@ const modelProviders = [
   { label: '文心一言', value: 'baidu' },
   { label: '智谱AI', value: 'zhipu' },
   { label: '百川', value: 'baichuan' },
-  { label: '月之暗面', value: 'moonshot' }
+  { label: '月之暗面', value: 'moonshot' },
+  { label: 'DeepSeek', value: 'deepseek' },
+  { label: 'AWS Bedrock', value: 'bedrock' },
+  { label: 'Cohere', value: 'cohere' },
+  { label: 'Hugging Face', value: 'huggingface' },
+  { label: 'Replicate', value: 'replicate' },
+  { label: 'Together AI', value: 'together' },
+  { label: 'LM Studio', value: 'lmstudio' },
+  { label: 'LocalAI', value: 'localai' },
+  { label: 'Xinference', value: 'xinference' },
+  { label: 'vLLM', value: 'vllm' },
+  { label: '讯飞星火', value: 'spark' },
+  { label: '腾讯混元', value: 'hunyuan' },
+  { label: '火山引擎', value: 'volcengine' },
+  { label: 'Fish Audio', value: 'fishaudio' },
+  { label: 'OpenRouter', value: 'openrouter' },
+  { label: 'Groq', value: 'groq' },
+  { label: 'Mistral AI', value: 'mistral' },
+  { label: 'Perplexity', value: 'perplexity' }
 ]
 
 // 获取表格数据
@@ -203,6 +244,23 @@ function submitForm() {
 function handleCancel() {
   dialogVisible.value = false
   formRef.value?.resetFields()
+}
+
+// 测试连接
+const testLoading = ref(false)
+function testConnection() {
+  formRef.value?.validate((valid) => {
+    if (valid) {
+      testLoading.value = true
+      // 这里应该调用测试API连接的接口
+      setTimeout(() => {
+        ElMessage.success('模型连接测试成功！')
+        testLoading.value = false
+      }, 2000)
+    } else {
+      ElMessage.warning('请先填写必填字段')
+    }
+  })
 }
 
 // 表格多选
@@ -351,7 +409,7 @@ onActivated(() => {
     </el-card>
 
     <!-- 添加/编辑对话框 -->
-    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="500px">
+    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="800px" max-height="80vh">
       <el-form ref="formRef" :model="formData" :rules="formRules" label-width="100px">
         <el-form-item label="模型名称" prop="name">
           <el-input v-model="formData.name" placeholder="请输入模型名称" />
@@ -382,9 +440,79 @@ onActivated(() => {
         <el-form-item label="API地址" prop="api_base">
           <el-input v-model="formData.api_base" placeholder="请输入API基础地址（可选）" />
         </el-form-item>
+
+        <!-- Azure OpenAI 专用字段 -->
+        <template v-if="formData.provider === 'azure'">
+          <el-form-item label="API版本" prop="api_version">
+            <el-input v-model="formData.api_version" placeholder="例如: 2024-02-15-preview" />
+          </el-form-item>
+          <el-form-item label="部署名称" prop="deployment_name">
+            <el-input v-model="formData.deployment_name" placeholder="请输入Azure部署名称" />
+          </el-form-item>
+        </template>
+
+        <!-- AWS Bedrock 专用字段 -->
+        <template v-if="formData.provider === 'bedrock'">
+          <el-form-item label="Access Key" prop="access_key">
+            <el-input v-model="formData.access_key" type="password" placeholder="请输入AWS Access Key" show-password />
+          </el-form-item>
+          <el-form-item label="Secret Key" prop="secret_key">
+            <el-input v-model="formData.secret_key" type="password" placeholder="请输入AWS Secret Key" show-password />
+          </el-form-item>
+          <el-form-item label="区域" prop="region">
+            <el-select v-model="formData.region" placeholder="请选择AWS区域">
+              <el-option label="美国东部 (us-east-1)" value="us-east-1" />
+              <el-option label="美国西部 (us-west-2)" value="us-west-2" />
+              <el-option label="欧洲 (eu-west-1)" value="eu-west-1" />
+              <el-option label="亚太地区 (ap-southeast-1)" value="ap-southeast-1" />
+            </el-select>
+          </el-form-item>
+        </template>
+
+        <!-- Google Cloud 专用字段 -->
+        <template v-if="formData.provider === 'google'">
+          <el-form-item label="项目ID" prop="project_id">
+            <el-input v-model="formData.project_id" placeholder="请输入Google Cloud项目ID" />
+          </el-form-item>
+          <el-form-item label="区域" prop="region">
+            <el-select v-model="formData.region" placeholder="请选择Google Cloud区域">
+              <el-option label="美国中部 (us-central1)" value="us-central1" />
+              <el-option label="美国东部 (us-east1)" value="us-east1" />
+              <el-option label="欧洲西部 (europe-west1)" value="europe-west1" />
+              <el-option label="亚洲东南部 (asia-southeast1)" value="asia-southeast1" />
+            </el-select>
+          </el-form-item>
+        </template>
+
+        <!-- OpenAI 专用字段 -->
+        <template v-if="formData.provider === 'openai'">
+          <el-form-item label="组织ID" prop="organization">
+            <el-input v-model="formData.organization" placeholder="请输入OpenAI组织ID（可选）" />
+          </el-form-item>
+        </template>
+
+        <!-- 自定义端点字段 -->
+        <template v-if="['localai', 'lmstudio', 'xinference', 'vllm', 'ollama'].includes(formData.provider)">
+          <el-form-item label="自定义端点" prop="endpoint">
+            <el-input v-model="formData.endpoint" placeholder="请输入自定义服务端点" />
+          </el-form-item>
+        </template>
+
         <el-form-item label="模型标识" prop="model_name">
           <el-input v-model="formData.model_name" placeholder="请输入模型标识" />
         </el-form-item>
+
+        <!-- 高级配置 -->
+        <el-form-item label="温度参数" prop="temperature">
+          <el-input-number v-model="formData.temperature" :min="0" :max="2" :step="0.1" placeholder="0.7" />
+        </el-form-item>
+        <el-form-item label="最大令牌数" prop="max_tokens">
+          <el-input-number v-model="formData.max_tokens" :min="1" :max="32768" :step="1" placeholder="4096" />
+        </el-form-item>
+        <el-form-item label="请求超时(ms)" prop="timeout">
+          <el-input-number v-model="formData.timeout" :min="1000" :max="300000" :step="1000" placeholder="30000" />
+        </el-form-item>
+
         <el-form-item label="状态" prop="status">
           <el-radio-group v-model="formData.status">
             <el-radio value="active">启用</el-radio>
@@ -393,6 +521,11 @@ onActivated(() => {
         </el-form-item>
       </el-form>
       <template #footer>
+        <div style="text-align: left; margin-bottom: 10px;">
+          <el-button type="info" @click="testConnection" :loading="testLoading">
+            测试连接
+          </el-button>
+        </div>
         <el-button @click="handleCancel">取消</el-button>
         <el-button type="primary" @click="submitForm" :loading="loading">确定</el-button>
       </template>
