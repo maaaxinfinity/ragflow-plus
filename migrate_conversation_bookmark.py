@@ -19,20 +19,25 @@ def migrate_conversation_bookmark():
     """为conversation表添加is_bookmarked字段"""
     try:
         with DB.connection_context():
-            # 检查字段是否已存在
-            cursor = DB.execute_sql("PRAGMA table_info(conversation)")
-            columns = [row[1] for row in cursor.fetchall()]
+            # 检查字段是否已存在 (MySQL语法)
+            cursor = DB.execute_sql("""
+                SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE()
+                AND TABLE_NAME = 'conversation'
+                AND COLUMN_NAME = 'is_bookmarked'
+            """)
+            column_exists = cursor.fetchone()[0] > 0
 
-            if 'is_bookmarked' not in columns:
+            if not column_exists:
                 print("添加is_bookmarked字段到conversation表...")
 
-                # 添加新字段
+                # 添加新字段 (MySQL语法)
                 DB.execute_sql(
-                    "ALTER TABLE conversation ADD COLUMN is_bookmarked INTEGER DEFAULT 0"
+                    "ALTER TABLE conversation ADD COLUMN is_bookmarked BOOLEAN DEFAULT FALSE"
                 )
 
                 print("✓ 成功添加is_bookmarked字段")
-                print("✓ 字段默认值：False (0)")
+                print("✓ 字段默认值：FALSE")
 
                 # 创建索引
                 try:
