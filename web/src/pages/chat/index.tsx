@@ -18,7 +18,6 @@ import { IDialog } from '@/interfaces/database/chat';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import {
   Avatar,
-  Button,
   Card,
   Divider,
   Dropdown,
@@ -252,10 +251,6 @@ const Chat = () => {
     <Flex className={styles.chatWrapper}>
       <Flex className={styles.chatAppWrapper}>
         <Flex flex={1} vertical>
-          <Button type="primary" onClick={handleShowChatConfigurationModal()}>
-            {t('createAssistant')}
-          </Button>
-          <Divider></Divider>
           <Flex className={styles.chatAppContent} vertical gap={10}>
             <Spin spinning={dialogLoading} wrapperClassName={styles.chatSpin}>
               {dialogList.map((x) => (

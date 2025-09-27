@@ -102,19 +102,38 @@ def get_agent_as_dialog(agent_id, user_id=None):
             columns = [desc[0] for desc in cursor.description]
             agent = dict(zip(columns, row))
             
-            # 权限验证：如果提供了user_id，检查用户是否有权限访问此agent
-            if user_id and agent.get('user_id') and agent['user_id'] != user_id:
-                # 检查用户是否属于同一个团队
+            # 权限验证：检查用户是否有权限访问此agent
+            if user_id:
+                # 检查用户是否属于该团队
                 team_cursor = DB.execute_sql("""
                     SELECT COUNT(*) as count
                     FROM user_tenant ut
                     WHERE ut.user_id = %s AND ut.tenant_id = %s AND ut.status = '1'
                 """, (user_id, agent['tenant_id']))
-                
+
                 team_row = team_cursor.fetchone()
                 if not team_row or team_row[0] == 0:
-                    # 用户不属于该团队，无权限访问
-                    return None
+                    # 用户不属于该团队，自动添加租户角色
+                    print(f"[DEBUG] User {user_id} not in team {agent['tenant_id']}, adding tenant role...")
+                    try:
+                        from api.utils import get_uuid
+                        from api.db import UserTenantRole
+                        from api.db.services.user_service import UserTenantService
+
+                        tenant_role_data = {
+                            "id": get_uuid(),
+                            "user_id": user_id,
+                            "tenant_id": agent['tenant_id'],
+                            "role": UserTenantRole.NORMAL,
+                            "invited_by": agent['tenant_id'],
+                            "status": "1"
+                        }
+                        UserTenantService.save(**tenant_role_data)
+                        print(f"[DEBUG] Successfully added user {user_id} to team {agent['tenant_id']}")
+                    except Exception as e:
+                        print(f"[DEBUG] Failed to add user to team: {e}")
+                        # 如果自动添加失败，仍然返回None拒绝访问
+                        return None
 
         # 转换为dialog格式
         kb_ids = []
@@ -339,8 +358,21 @@ def set_conversation():
                 "message": [{"role": "assistant", "content": dia.prompt_config["prologue"]}]
             }
 
-        ConversationService.save(**conv)
-        return get_json_result(data=conv)
+        # 检查conversation是否已存在，避免重复创建
+        existing_conv = None
+        try:
+            e, existing_conv = ConversationService.get_by_id(conv_id)
+        except:
+            pass
+
+        if existing_conv:
+            # 如果conversation已存在，直接返回
+            print(f"[DEBUG] Conversation {conv_id} already exists, returning existing one")
+            return get_json_result(data=existing_conv.to_dict())
+        else:
+            # 如果不存在，则创建新的
+            ConversationService.save(**conv)
+            return get_json_result(data=conv)
     except Exception as e:
         return server_error_response(e)
 

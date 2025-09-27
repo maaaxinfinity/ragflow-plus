@@ -131,18 +131,23 @@ export const useFetchNextDialogList = () => {
           const allAgents = agentResult.data?.list || [];
           console.log('👥 [DEBUG] All agents:', allAgents.length);
 
-          // 如果没有租户信息，允许访问所有"ALL"团队的agents
-          // 或者如果用户有租户，则过滤相应团队的agents
+          // Agent权限检查逻辑：
+          // 1. 'ALL'团队的Agent对所有用户可见
+          // 2. 如果用户没有租户信息，显示所有Agent（兼容模式）
+          // 3. 如果用户有租户信息，显示所属团队的Agent
           managementAgents = allAgents.filter((agent: any) => {
             const isAllTeam = agent.team_id === 'ALL';
+            // 修改权限检查逻辑，更宽松地处理Agent访问
             const userHasAccess =
-              userTenants.length === 0 || userTenants.includes(agent.team_id);
+              userTenants.length === 0 || // 用户没有租户信息时允许访问
+              userTenants.includes(agent.team_id) || // 用户属于Agent的团队
+              isAllTeam; // ALL团队的Agent对所有人可见
 
             console.log(
               `🔐 [DEBUG] Agent ${agent.name}: team=${agent.team_id}, isAll=${isAllTeam}, hasAccess=${userHasAccess}`,
             );
 
-            return isAllTeam || userHasAccess;
+            return userHasAccess;
           });
 
           console.log(

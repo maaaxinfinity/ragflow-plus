@@ -23,7 +23,6 @@ import {
   useSendMessageWithSse,
 } from '@/hooks/logic-hooks';
 import { IConversation, IDialog, Message } from '@/interfaces/database/chat';
-import chatService from '@/services/chat-service';
 import { getFileExtension } from '@/utils';
 import api from '@/utils/api';
 import { getConversationId } from '@/utils/chat';
@@ -268,150 +267,44 @@ export const useSetConversation = () => {
         conversationId,
         dialogId,
       });
-      let actualDialogId = dialogId;
 
-      // Temporary frontend fix: create RAGFlow dialog for agent dialogs
-      // This will be removed once backend fix is deployed
-      if (dialogId && dialogId.startsWith('agent_')) {
-        try {
-          console.log('[DEBUG] Handling agent dialog on frontend');
+      // 支持management Agent对话，但简化处理逻辑
+      try {
+        const data = await updateConversation({
+          dialog_id: dialogId,
+          name: message,
+          is_new: isNew,
+          conversation_id: conversationId,
+          message: [
+            {
+              role: MessageType.Assistant,
+              content: message,
+            },
+          ],
+        });
 
-          // Get current user's tenant info from existing dialogs
-          const { data: existingDialogs } = await chatService.listDialog();
-          let currentTenantId = '';
-          if (
-            existingDialogs.code === 0 &&
-            existingDialogs.data &&
-            existingDialogs.data.length > 0
-          ) {
-            currentTenantId = existingDialogs.data[0].tenant_id || '';
-            console.log('[DEBUG] Using current tenant ID:', currentTenantId);
-          }
-
-          // Fetch agent details from management API
-          const agentResponse = await fetch('/api/v1/agents');
-          if (agentResponse.ok) {
-            const agentResult = await agentResponse.json();
-            const allAgents = agentResult.data?.list || [];
-
-            // Find the agent by matching the dialogId
-            const agentId = dialogId.replace('agent_', '');
-            const agent = allAgents.find((a: any) => a.id === agentId);
-
-            if (agent) {
-              console.log('[DEBUG] Found agent, creating RAGFlow dialog');
-
-              // Parse kb_ids properly
-              let kbIds = [];
-              try {
-                if (agent.kb_ids) {
-                  let kbIdsStr = agent.kb_ids;
-                  // Remove extra escaping layers
-                  while (
-                    typeof kbIdsStr === 'string' &&
-                    kbIdsStr.startsWith('"') &&
-                    kbIdsStr.endsWith('"')
-                  ) {
-                    kbIdsStr = JSON.parse(kbIdsStr);
-                  }
-                  if (Array.isArray(kbIdsStr)) {
-                    kbIds = kbIdsStr;
-                  } else if (typeof kbIdsStr === 'string') {
-                    kbIds = JSON.parse(kbIdsStr);
-                  }
-                }
-              } catch (error) {
-                console.warn('Failed to parse kb_ids:', error);
-                kbIds = [];
-              }
-
-              // Parse agent's structured data from management system
-              let llmSetting = {};
-              let promptConfig = {};
-              try {
-                llmSetting = agent.llm_setting
-                  ? JSON.parse(agent.llm_setting)
-                  : {};
-                promptConfig = agent.prompt_config
-                  ? JSON.parse(agent.prompt_config)
-                  : {};
-              } catch (error) {
-                console.warn(
-                  '[DEBUG] Failed to parse agent structured data:',
-                  error,
-                );
-              }
-
-              // Create RAGFlow dialog from agent - use CURRENT user's tenant_id for permissions
-              const ragflowDialog = {
-                name: agent.name,
-                description: agent.description || '',
-                icon: agent.icon || '/assets/agent/Agent-icon.svg', // Use icon field from agent_config
-                kb_ids: kbIds,
-                language: agent.language === 'Chinese' ? 'Chinese' : 'English',
-                llm_id: agent.llm_id || agent.model_name || '', // Use llm_id field from agent_config
-                llm_setting: {
-                  temperature: llmSetting.temperature || 0.1,
-                  max_tokens: llmSetting.max_tokens || 512,
-                  top_p: llmSetting.top_p || 0.3,
-                  frequency_penalty: llmSetting.frequency_penalty || 0.7,
-                  presence_penalty: llmSetting.presence_penalty || 0.4,
-                },
-                prompt_type: agent.prompt_type || 'simple',
-                prompt_config: {
-                  system: promptConfig.system || '',
-                  prologue:
-                    promptConfig.prologue ||
-                    "Hi! I'm your assistant, what can I do for you?",
-                  empty_response:
-                    promptConfig.empty_response ||
-                    'Sorry! No relevant content was found in the knowledge base!',
-                  parameters: promptConfig.parameters || [
-                    { key: 'knowledge', optional: false },
-                  ],
-                },
-                // Use current user's tenant_id instead of agent's team_id to avoid permission issues
-                tenant_id: currentTenantId,
-                similarity_threshold: agent.similarity_threshold || 0.2,
-                vector_similarity_weight: agent.vector_similarity_weight || 0.3,
-                top_n: agent.top_n || 6,
-                top_k: agent.top_k || 1024,
-                do_refer: agent.do_refer || '1',
-                rerank_id: agent.rerank_id || '',
-                status: '1', // Always set status to valid for new dialogs
-              };
-
-              console.log(
-                '[DEBUG] Creating dialog with tenant_id:',
-                currentTenantId,
-              );
-
-              // Create the dialog in RAGFlow system
-              const createResult = await setDialog(ragflowDialog);
-              if (createResult === 0) {
-                console.log(
-                  '[DEBUG] Successfully created RAGFlow dialog for agent',
-                );
-                // Use the original agent format - the system should now recognize it
-                actualDialogId = dialogId;
-              } else {
-                console.error(
-                  '[DEBUG] Failed to create RAGFlow dialog, code:',
-                  createResult,
-                );
-                actualDialogId = dialogId;
-              }
-            }
-          }
-        } catch (error) {
-          console.warn('[DEBUG] Error handling agent dialog:', error);
-          // Fall back to original dialog ID
-          actualDialogId = dialogId;
+        // 如果后端直接支持Agent对话成功，直接返回
+        if (data) {
+          return data;
         }
+      } catch (error) {
+        console.log(
+          '[DEBUG] Backend direct agent support failed, using fallback:',
+          error,
+        );
       }
 
-      const data = await updateConversation({
-        dialog_id: actualDialogId,
+      // 如果是Agent dialog且后端直接支持失败，输出错误信息
+      if (dialogId && dialogId.startsWith('agent_')) {
+        console.error(
+          '[DEBUG] Agent dialog not supported, please check backend implementation',
+        );
+        throw new Error('Agent对话暂不可用，请联系管理员');
+      }
+
+      // 对于普通dialog，正常处理
+      return await updateConversation({
+        dialog_id: dialogId,
         name: message,
         is_new: isNew,
         conversation_id: conversationId,
@@ -422,10 +315,8 @@ export const useSetConversation = () => {
           },
         ],
       });
-
-      return data;
     },
-    [updateConversation, dialogId, setDialog],
+    [updateConversation, dialogId],
   );
 
   return { setConversation };
