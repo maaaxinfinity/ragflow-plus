@@ -39,9 +39,9 @@ def migrate_conversation_dialog_id():
             cursor = DB.execute_sql("""
                 SELECT id, dialog_id, name
                 FROM conversation
-                WHERE dialog_id LIKE 'agent_%'
-                AND LENGTH(dialog_id) < 38
-            """)
+                WHERE dialog_id LIKE %s
+                AND LENGTH(dialog_id) < %s
+            """, ('agent_%', 38))
 
             truncated_records = cursor.fetchall()
             if truncated_records:
