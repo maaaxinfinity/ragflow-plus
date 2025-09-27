@@ -15,7 +15,12 @@ import {
 import { useTranslate } from '@/hooks/common-hooks';
 import { useSetSelectedRecord } from '@/hooks/logic-hooks';
 import { IDialog } from '@/interfaces/database/chat';
-import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
+import {
+  DeleteOutlined,
+  EditOutlined,
+  PushpinFilled,
+  PushpinOutlined,
+} from '@ant-design/icons';
 import {
   Avatar,
   Card,
@@ -367,20 +372,34 @@ const Chat = () => {
                 >
                   <Flex justify="space-between" align="center">
                     <Flex align="center" gap={8}>
-                      <SvgIcon
-                        name={x.is_bookmarked ? 'bookmark-fill' : 'bookmark'}
-                        width={14}
-                        height={14}
-                        style={{
-                          cursor: 'pointer',
-                          opacity: x.is_bookmarked ? 1 : 0.5,
-                          color: x.is_bookmarked ? '#fadb14' : '#d9d9d9',
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleToggleBookmark(x.id, !x.is_bookmarked);
-                        }}
-                      />
+                      {x.is_bookmarked ? (
+                        <PushpinFilled
+                          style={{
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            color: '#fadb14',
+                            transform: 'rotate(45deg)',
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleBookmark(x.id, !x.is_bookmarked);
+                          }}
+                        />
+                      ) : (
+                        <PushpinOutlined
+                          style={{
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            color: '#d9d9d9',
+                            opacity: 0.6,
+                            transform: 'rotate(45deg)',
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleBookmark(x.id, !x.is_bookmarked);
+                          }}
+                        />
+                      )}
                       <Text
                         ellipsis={{ tooltip: x.name }}
                         style={{ width: 130 }}
@@ -406,20 +425,6 @@ const Chat = () => {
               ))}
             </Spin>
           </Flex>
-          {conversationList.length > 0 && (
-            <Flex justify="center" style={{ marginTop: 16, paddingBottom: 16 }}>
-              <DeleteOutlined
-                style={{
-                  color: '#ff4d4f',
-                  fontSize: '16px',
-                  cursor: 'pointer',
-                  padding: '8px',
-                }}
-                title="删除所有对话"
-                onClick={handleDeleteAllConversations}
-              />
-            </Flex>
-          )}
         </Flex>
       </Flex>
       <Divider type={'vertical'} className={styles.divider}></Divider>
@@ -477,6 +482,34 @@ const Chat = () => {
           </Flex>
         </Modal>
       )} */}
+
+      {/* 删除所有对话按钮 - 固定在页面底部 */}
+      {conversationList.length > 0 && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '20px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 1000,
+            backgroundColor: '#fff',
+            borderRadius: '50%',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+            padding: '12px',
+            border: '1px solid #f0f0f0',
+          }}
+        >
+          <DeleteOutlined
+            style={{
+              color: '#ff4d4f',
+              fontSize: '18px',
+              cursor: 'pointer',
+            }}
+            title="删除所有未书签对话"
+            onClick={handleDeleteAllConversations}
+          />
+        </div>
+      )}
     </Flex>
   );
 };

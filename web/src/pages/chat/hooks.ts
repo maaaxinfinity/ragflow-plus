@@ -581,19 +581,22 @@ export const useDeleteConversation = () => {
 
 export const useToggleConversationBookmark = () => {
   const { updateConversation } = useUpdateNextConversation();
+  const { dialogId } = useGetChatSearchParams();
 
   const toggleBookmark = useCallback(
     async (conversationId: string, isBookmarked: boolean) => {
       try {
         await updateConversation({
           conversation_id: conversationId,
+          dialog_id: dialogId,
           is_bookmarked: isBookmarked,
+          is_new: false, // 明确指定这不是新建对话
         });
       } catch (error) {
         console.error('Failed to toggle bookmark:', error);
       }
     },
-    [updateConversation],
+    [updateConversation, dialogId],
   );
 
   return { toggleBookmark };
