@@ -15,12 +15,12 @@ import {
   useGlobalDefaultModels
 } from '@/common/composables/useModelManagement'
 import {
-  BedrockRegionList,
-  GoogleCloudRegionList,
-  AzureApiVersionList,
-  ProviderSpecificFields,
-  AdvancedConfigFields
-} from '@/common/constants/model-constants'
+  MODEL_PROVIDERS,
+  getProviderConfig,
+  getProviderDefaultValues,
+  type ModelProviderConfig,
+  type ModelField
+} from '@/common/constants/model-providers'
 
 defineOptions({
   name: 'ModelSetting'
@@ -136,43 +136,60 @@ const currentViewModel = ref<any>(null)
 
 // 添加模型表单
 const addModelFormRef = ref<FormInstance | null>(null)
-const addModelForm = reactive({
+const addModelForm = reactive<Record<string, any>>({
+  // 基础字段
   user_id: '',
   user_name: '',
   llm_factory: '',
   api_key: '',
-  base_url: '',
+  api_base: '',
+  llm_name: '',
   model_type: '',
-  // Azure OpenAI 专用字段
-  api_version: '',
-  deployment_name: '',
-  // AWS Bedrock 专用字段
-  bedrock_ak: '',
-  bedrock_sk: '',
-  bedrock_region: '',
-  // Google Cloud 专用字段
-  project_id: '',
-  region: '',
-  // OpenAI 专用字段
-  organization: '',
-  // 自定义端点字段
-  endpoint: '',
   // 高级配置字段
   temperature: 0.7,
   max_tokens: 4096,
   timeout: 30000
 })
 
-// 获取当前选择供应商的特定字段
-const currentProviderFields = computed(() => {
-  if (!addModelForm.llm_factory) return []
-  return ProviderSpecificFields[addModelForm.llm_factory as keyof typeof ProviderSpecificFields] || []
+// 获取当前选择供应商的配置
+const currentProviderConfig = computed(() => {
+  if (!addModelForm.llm_factory) return null
+  return getProviderConfig(addModelForm.llm_factory)
 })
 
-// 是否需要自定义端点
-const needsCustomEndpoint = computed(() => {
-  return ['localai', 'lmstudio', 'xinference', 'vllm', 'ollama'].includes(addModelForm.llm_factory)
+// 获取当前供应商的字段列表
+const currentProviderFields = computed(() => {
+  return currentProviderConfig.value?.fields || []
 })
+
+// 监听供应商变化，重置和初始化相关字段
+watch(() => addModelForm.llm_factory, (newProvider, oldProvider) => {
+  if (newProvider !== oldProvider && newProvider) {
+    // 清除旧供应商的字段
+    if (oldProvider) {
+      const oldConfig = getProviderConfig(oldProvider)
+      oldConfig?.fields.forEach(field => {
+        delete addModelForm[field.name]
+      })
+    }
+
+    // 设置新供应商的默认值
+    const defaultValues = getProviderDefaultValues(newProvider)
+    Object.assign(addModelForm, defaultValues)
+
+    // 设置默认模型类型
+    const config = getProviderConfig(newProvider)
+    if (config?.defaultModelType) {
+      addModelForm.model_type = config.defaultModelType
+    }
+  }
+})
+
+// 检查字段显示条件
+function checkFieldCondition(condition: string): boolean {
+  const [field, value] = condition.split('=')
+  return addModelForm[field] === value
+}
 
 // 全局默认模型表单
 const globalDefaultsForm = reactive({
@@ -286,13 +303,41 @@ async function submitAddModel() {
 
   await addModelFormRef.value.validate(async (valid) => {
     if (valid) {
-      const success = await addModel({
+      // 处理vision字段逻辑（与原始modal一致）
+      const modelType = addModelForm.model_type === 'chat' && addModelForm.vision
+        ? 'image2text'
+        : addModelForm.model_type
+
+      // 构建基础提交数据
+      const submitData: Record<string, any> = {
         user_id: addModelForm.user_id,
         llm_factory: addModelForm.llm_factory,
-        api_key: addModelForm.api_key,
-        base_url: addModelForm.base_url,
-        model_type: addModelForm.model_type
+        llm_name: addModelForm.llm_name,
+        model_type: modelType,
+        max_tokens: addModelForm.max_tokens,
+        // 高级配置
+        temperature: addModelForm.temperature,
+        timeout: addModelForm.timeout
+      }
+
+      // 动态添加供应商特定字段（排除vision字段）
+      currentProviderFields.value.forEach(field => {
+        if (field.name !== 'vision' && addModelForm[field.name] !== undefined && addModelForm[field.name] !== '') {
+          submitData[field.name] = addModelForm[field.name]
+        }
       })
+
+      // 添加通用字段
+      if (addModelForm.api_key) {
+        submitData.api_key = addModelForm.api_key
+      }
+      if (addModelForm.api_base) {
+        submitData.api_base = addModelForm.api_base
+      }
+
+      console.info('提交模型配置数据:', submitData)
+
+      const success = await addModel(submitData)
       if (success) {
         addModelDialogVisible.value = false
         getTableData()
@@ -360,31 +405,39 @@ function maskApiKey(apiKey: string) {
 
 // 表单验证规则
 const addModelRules = computed(() => {
-  const baseRules = {
+  const baseRules: Record<string, any> = {
     user_id: [{ required: true, message: '请输入用户ID', trigger: 'blur' }],
     llm_factory: [{ required: true, message: '请选择模型供应商', trigger: 'change' }],
     model_type: [{ required: true, message: '请选择模型类型', trigger: 'change' }],
-    api_key: [{ required: true, message: '请输入API Key', trigger: 'blur' }]
+    llm_name: [{ required: true, message: '请输入模型名称', trigger: 'blur' }],
+    max_tokens: [
+      { required: true, message: '请输入最大令牌数', trigger: 'blur' },
+      { type: 'number', min: 0, message: '最大令牌数不能小于0', trigger: 'blur' }
+    ]
   }
 
-  // 根据选择的供应商添加特定字段验证
+  // 动态添加供应商特定字段的验证规则
+  currentProviderFields.value.forEach(field => {
+    if (field.required) {
+      const trigger = field.type === 'select' ? 'change' : 'blur'
+      baseRules[field.name] = [{
+        required: true,
+        message: `请${field.type === 'select' ? '选择' : '输入'}${field.label}`,
+        trigger
+      }]
+
+      // 数字类型添加额外验证
+      if (field.type === 'number') {
+        baseRules[field.name].push({ type: 'number', min: field.min || 0 })
+      }
+    }
+  })
+
+  // 特殊处理：Azure OpenAI中API Key可选
   if (addModelForm.llm_factory === 'azure_openai') {
-    baseRules.api_version = [{ required: true, message: '请选择API版本', trigger: 'change' }]
-    baseRules.deployment_name = [{ required: true, message: '请输入部署名称', trigger: 'blur' }]
-  }
-
-  if (addModelForm.llm_factory === 'bedrock') {
-    baseRules.bedrock_ak = [{ required: true, message: '请输入AWS Access Key', trigger: 'blur' }]
-    baseRules.bedrock_sk = [{ required: true, message: '请输入AWS Secret Key', trigger: 'blur' }]
-    baseRules.bedrock_region = [{ required: true, message: '请选择AWS区域', trigger: 'change' }]
-  }
-
-  if (addModelForm.llm_factory === 'google') {
-    baseRules.project_id = [{ required: true, message: '请输入Google Cloud项目ID', trigger: 'blur' }]
-  }
-
-  if (needsCustomEndpoint.value) {
-    baseRules.endpoint = [{ required: true, message: '请输入自定义端点', trigger: 'blur' }]
+    baseRules.api_key = [{ required: false, message: '请输入API Key', trigger: 'blur' }]
+  } else {
+    baseRules.api_key = [{ required: true, message: '请输入API Key', trigger: 'blur' }]
   }
 
   return baseRules
@@ -586,79 +639,86 @@ onMounted(() => {
           </el-select>
         </el-form-item>
 
+        <el-form-item label="模型名称" prop="llm_name">
+          <el-input v-model="addModelForm.llm_name" placeholder="请输入模型名称，如: gpt-4, text-embedding-3-large" />
+        </el-form-item>
+
+        <el-form-item label="API Base URL" prop="api_base">
+          <el-input v-model="addModelForm.api_base" placeholder="请输入API基础地址" />
+        </el-form-item>
+
         <el-form-item label="API Key" prop="api_key">
           <el-input v-model="addModelForm.api_key" type="password" placeholder="请输入API Key" show-password />
         </el-form-item>
 
-        <!-- Azure OpenAI 专用字段 -->
-        <template v-if="addModelForm.llm_factory === 'azure_openai'">
-          <el-form-item label="API版本" prop="api_version">
-            <el-select v-model="addModelForm.api_version" placeholder="请选择API版本">
-              <el-option label="2024-02-15-preview" value="2024-02-15-preview" />
-              <el-option label="2023-12-01-preview" value="2023-12-01-preview" />
-              <el-option label="2023-05-15" value="2023-05-15" />
-              <el-option label="2023-03-15-preview" value="2023-03-15-preview" />
+        <!-- 动态供应商专用字段 -->
+        <template v-for="field in currentProviderFields" :key="field.name">
+          <!-- 条件显示字段 -->
+          <el-form-item
+            v-if="!field.showWhen || checkFieldCondition(field.showWhen)"
+            :label="field.label"
+            :prop="field.name"
+          >
+            <!-- 文本输入 -->
+            <el-input
+              v-if="field.type === 'input'"
+              v-model="addModelForm[field.name]"
+              :placeholder="field.placeholder"
+            />
+
+            <!-- 密码输入 -->
+            <el-input
+              v-else-if="field.type === 'password'"
+              v-model="addModelForm[field.name]"
+              type="password"
+              show-password
+              :placeholder="field.placeholder"
+            />
+
+            <!-- 多行文本 -->
+            <el-input
+              v-else-if="field.type === 'textarea'"
+              v-model="addModelForm[field.name]"
+              type="textarea"
+              :rows="field.rows || 3"
+              :placeholder="field.placeholder"
+            />
+
+            <!-- 数字输入 -->
+            <el-input-number
+              v-else-if="field.type === 'number'"
+              v-model="addModelForm[field.name]"
+              :min="field.min"
+              :max="field.max"
+              :step="field.step"
+              :placeholder="field.placeholder"
+              style="width: 100%"
+            />
+
+            <!-- 选择器 -->
+            <el-select
+              v-else-if="field.type === 'select'"
+              v-model="addModelForm[field.name]"
+              :placeholder="field.placeholder"
+              style="width: 100%"
+            >
+              <el-option
+                v-for="option in field.options"
+                :key="option.value"
+                :label="option.label"
+                :value="option.value"
+              />
             </el-select>
-          </el-form-item>
-          <el-form-item label="部署名称" prop="deployment_name">
-            <el-input v-model="addModelForm.deployment_name" placeholder="请输入Azure部署名称" />
+
+            <!-- 开关 -->
+            <div v-else-if="field.type === 'switch'">
+              <el-switch v-model="addModelForm[field.name]" />
+              <div v-if="field.name === 'vision'" style="font-size: 12px; color: #666; margin-top: 4px;">
+                启用后可处理图像输入（模型类型将自动设置为image2text）
+              </div>
+            </div>
           </el-form-item>
         </template>
-
-        <!-- AWS Bedrock 专用字段 -->
-        <template v-if="addModelForm.llm_factory === 'bedrock'">
-          <el-form-item label="Access Key" prop="bedrock_ak">
-            <el-input v-model="addModelForm.bedrock_ak" type="password" placeholder="请输入AWS Access Key" show-password />
-          </el-form-item>
-          <el-form-item label="Secret Key" prop="bedrock_sk">
-            <el-input v-model="addModelForm.bedrock_sk" type="password" placeholder="请输入AWS Secret Key" show-password />
-          </el-form-item>
-          <el-form-item label="区域" prop="bedrock_region">
-            <el-select v-model="addModelForm.bedrock_region" placeholder="请选择AWS区域">
-              <el-option label="美国东部 (us-east-1)" value="us-east-1" />
-              <el-option label="美国西部 (us-west-2)" value="us-west-2" />
-              <el-option label="亚太东南 (ap-southeast-1)" value="ap-southeast-1" />
-              <el-option label="亚太东北 (ap-northeast-1)" value="ap-northeast-1" />
-              <el-option label="欧洲中部 (eu-central-1)" value="eu-central-1" />
-              <el-option label="美国政府西部 (us-gov-west-1)" value="us-gov-west-1" />
-              <el-option label="亚太东南2 (ap-southeast-2)" value="ap-southeast-2" />
-            </el-select>
-          </el-form-item>
-        </template>
-
-        <!-- Google Cloud 专用字段 -->
-        <template v-if="addModelForm.llm_factory === 'google'">
-          <el-form-item label="项目ID" prop="project_id">
-            <el-input v-model="addModelForm.project_id" placeholder="请输入Google Cloud项目ID" />
-          </el-form-item>
-          <el-form-item label="区域" prop="region">
-            <el-select v-model="addModelForm.region" placeholder="请选择Google Cloud区域">
-              <el-option label="美国中部 (us-central1)" value="us-central1" />
-              <el-option label="美国东部 (us-east1)" value="us-east1" />
-              <el-option label="欧洲西部 (europe-west1)" value="europe-west1" />
-              <el-option label="亚洲东南部 (asia-southeast1)" value="asia-southeast1" />
-              <el-option label="亚洲东北部 (asia-northeast1)" value="asia-northeast1" />
-            </el-select>
-          </el-form-item>
-        </template>
-
-        <!-- OpenAI 专用字段 -->
-        <template v-if="addModelForm.llm_factory === 'openai'">
-          <el-form-item label="组织ID" prop="organization">
-            <el-input v-model="addModelForm.organization" placeholder="请输入OpenAI组织ID（可选）" />
-          </el-form-item>
-        </template>
-
-        <!-- 自定义端点字段 -->
-        <template v-if="needsCustomEndpoint">
-          <el-form-item label="自定义端点" prop="endpoint">
-            <el-input v-model="addModelForm.endpoint" placeholder="请输入自定义服务端点" />
-          </el-form-item>
-        </template>
-
-        <el-form-item label="Base URL">
-          <el-input v-model="addModelForm.base_url" placeholder="可选，默认使用官方API地址" />
-        </el-form-item>
 
         <!-- 高级配置 -->
         <el-divider content-position="left">高级配置</el-divider>
