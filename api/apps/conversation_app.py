@@ -148,6 +148,7 @@ def get_agent_as_dialog(agent_id, user_id=None):
             'name': agent['name'],
             'tenant_id': agent['tenant_id'],
             'description': agent.get('description', ''),
+            'icon': agent.get('avatar', '/assets/agent/Agent-icon.svg'),
             'llm_id': agent.get('llm_id', ''),
             'kb_ids': kb_ids,
             'language': agent.get('language', 'Chinese'),
