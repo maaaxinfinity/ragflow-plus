@@ -470,6 +470,7 @@ export const useFetchNextConversationList = () => {
 export const useFetchNextConversation = () => {
   const { isNew, conversationId, dialogId } = useGetChatSearchParams();
   const { sharedId } = useGetSharedChatSearchParams();
+  const queryClient = useQueryClient();
   const {
     data,
     isFetching: loading,
@@ -500,16 +501,19 @@ export const useFetchNextConversation = () => {
       if (isNew === 'true' && dialogId && dialogId.startsWith('agent_')) {
         try {
           // Create a new conversation via backend API first
+          // 使用固定的新对话标题
+          const newConversationName = '新对话';
+
           console.log('[DEBUG] Creating conversation:', {
             conversation_id: conversationId,
             dialog_id: dialogId,
-            name: 'New conversation',
+            name: newConversationName,
           });
 
           const createResponse = await chatService.setConversation({
             conversation_id: conversationId,
             dialog_id: dialogId,
-            name: 'New conversation',
+            name: newConversationName,
             is_new: true, // 明确指定这是新建对话
           });
 
@@ -526,6 +530,12 @@ export const useFetchNextConversation = () => {
               const messageList = buildMessageListWithUuid(
                 conversation?.message,
               );
+
+              // 刷新对话列表缓存，确保新对话立即显示
+              queryClient.invalidateQueries({
+                queryKey: ['fetchConversationList', dialogId],
+              });
+
               return { ...conversation, message: messageList };
             }
           }
@@ -543,6 +553,11 @@ export const useFetchNextConversation = () => {
             const agent = allAgents.find((a: any) => a.id === agentId);
 
             if (agent) {
+              // 刷新对话列表缓存，确保fallback对话也能显示
+              queryClient.invalidateQueries({
+                queryKey: ['fetchConversationList', dialogId],
+              });
+
               return {
                 id: conversationId,
                 name: `与${agent.name}的对话`,

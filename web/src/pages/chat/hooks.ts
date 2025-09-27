@@ -579,6 +579,26 @@ export const useDeleteConversation = () => {
   return { onRemoveConversation };
 };
 
+export const useToggleConversationBookmark = () => {
+  const { updateConversation } = useUpdateNextConversation();
+
+  const toggleBookmark = useCallback(
+    async (conversationId: string, isBookmarked: boolean) => {
+      try {
+        await updateConversation({
+          conversation_id: conversationId,
+          is_bookmarked: isBookmarked,
+        });
+      } catch (error) {
+        console.error('Failed to toggle bookmark:', error);
+      }
+    },
+    [updateConversation],
+  );
+
+  return { toggleBookmark };
+};
+
 export const useRenameConversation = () => {
   const [conversation, setConversation] = useState<IClientConversation>(
     {} as IClientConversation,

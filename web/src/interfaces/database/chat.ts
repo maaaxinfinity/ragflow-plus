@@ -68,6 +68,7 @@ export interface IConversation {
   update_date: string;
   update_time: number;
   is_new: true;
+  is_bookmarked?: boolean;
 }
 
 export interface Message {

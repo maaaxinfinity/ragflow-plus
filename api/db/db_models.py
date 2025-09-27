@@ -932,6 +932,7 @@ class Conversation(DataBaseModel):
     message = JSONField(null=True)
     reference = JSONField(null=True, default=[])
     user_id = CharField(max_length=255, null=True, help_text="user_id", index=True)
+    is_bookmarked = BooleanField(default=False, help_text="bookmark status", index=True)
 
     class Meta:
         db_table = "conversation"

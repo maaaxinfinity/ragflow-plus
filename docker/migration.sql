@@ -91,4 +91,40 @@ FROM agent_config a
 LEFT JOIN user_tenant ut ON a.team_id = ut.tenant_id
 WHERE a.status = 'active';
 
-SELECT 'Agent权限字段迁移完成' as message;
+-- 检查并为conversation表添加is_bookmarked字段
+SET @column_exists = (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = 'rag_flow'
+    AND TABLE_NAME = 'conversation'
+    AND COLUMN_NAME = 'is_bookmarked'
+);
+
+SET @sql = IF(@column_exists = 0,
+    'ALTER TABLE conversation ADD COLUMN is_bookmarked BOOLEAN DEFAULT FALSE AFTER user_id',
+    'SELECT "is_bookmarked column already exists" as message'
+);
+
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- 检查并添加is_bookmarked索引
+SET @index_exists = (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE TABLE_SCHEMA = 'rag_flow'
+    AND TABLE_NAME = 'conversation'
+    AND INDEX_NAME = 'idx_conversation_is_bookmarked'
+);
+
+SET @sql = IF(@index_exists = 0,
+    'ALTER TABLE conversation ADD INDEX idx_conversation_is_bookmarked (is_bookmarked)',
+    'SELECT "idx_conversation_is_bookmarked index already exists" as message'
+);
+
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SELECT 'Agent权限字段和Conversation书签字段迁移完成' as message;

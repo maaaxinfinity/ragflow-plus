@@ -43,6 +43,7 @@ import {
   useHandleItemHover,
   useRenameConversation,
   useSelectDerivedConversationList,
+  useToggleConversationBookmark,
 } from './hooks';
 import styles from './index.less';
 
@@ -55,6 +56,7 @@ const Chat = () => {
   const { data: dialogList, loading: dialogLoading } = useFetchNextDialogList();
   const { onRemoveDialog } = useDeleteDialog();
   const { onRemoveConversation } = useDeleteConversation();
+  const { toggleBookmark } = useToggleConversationBookmark();
   const { handleClickDialog } = useClickDialogCard();
   const { handleClickConversation } = useClickConversationCard();
   const { dialogId, conversationId } = useGetChatSearchParams();
@@ -172,6 +174,24 @@ const Chat = () => {
   const handleCreateTemporaryConversation = useCallback(() => {
     addTemporaryConversation();
   }, [addTemporaryConversation]);
+
+  const handleDeleteAllConversations = useCallback(() => {
+    const unbookmarkedConversations = conversationList.filter(
+      (x) => !x.is_bookmarked,
+    );
+    if (unbookmarkedConversations.length === 0) {
+      return;
+    }
+    const conversationIds = unbookmarkedConversations.map((x) => x.id);
+    onRemoveConversation(conversationIds);
+  }, [conversationList, onRemoveConversation]);
+
+  const handleToggleBookmark = useCallback(
+    (conversationId: string, isBookmarked: boolean) => {
+      toggleBookmark(conversationId, isBookmarked);
+    },
+    [toggleBookmark],
+  );
 
   // 用于自动更新 localStorage
   // const handleFontSizeChange = (value: number) => {
@@ -346,14 +366,28 @@ const Chat = () => {
                   })}
                 >
                   <Flex justify="space-between" align="center">
-                    <div>
+                    <Flex align="center" gap={8}>
+                      <SvgIcon
+                        name={x.is_bookmarked ? 'bookmark-fill' : 'bookmark'}
+                        width={14}
+                        height={14}
+                        style={{
+                          cursor: 'pointer',
+                          opacity: x.is_bookmarked ? 1 : 0.5,
+                          color: x.is_bookmarked ? '#fadb14' : '#d9d9d9',
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleBookmark(x.id, !x.is_bookmarked);
+                        }}
+                      />
                       <Text
                         ellipsis={{ tooltip: x.name }}
-                        style={{ width: 150 }}
+                        style={{ width: 130 }}
                       >
                         {x.name}
                       </Text>
-                    </div>
+                    </Flex>
                     {conversationActivated === x.id &&
                       x.id !== '' &&
                       !x.is_new && (
@@ -372,6 +406,20 @@ const Chat = () => {
               ))}
             </Spin>
           </Flex>
+          {conversationList.length > 0 && (
+            <Flex justify="center" style={{ marginTop: 16, paddingBottom: 16 }}>
+              <DeleteOutlined
+                style={{
+                  color: '#ff4d4f',
+                  fontSize: '16px',
+                  cursor: 'pointer',
+                  padding: '8px',
+                }}
+                title="删除所有对话"
+                onClick={handleDeleteAllConversations}
+              />
+            </Flex>
+          )}
         </Flex>
       </Flex>
       <Divider type={'vertical'} className={styles.divider}></Divider>

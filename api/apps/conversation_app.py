@@ -75,6 +75,81 @@ def ensure_user_tenant_roles(user_id):
     return tenants
 
 
+def generate_conversation_title_if_needed(conv, messages):
+    """根据首次用户消息，使用LLM生成智能对话标题"""
+    try:
+        # 检查是否需要生成标题：
+        # 1. 当前标题是默认标题
+        # 2. 这是首次有实际用户消息的对话
+        current_name = conv.name or ""
+        if current_name not in ["新对话", "New conversation", ""]:
+            return  # 已经有自定义标题，跳过
+
+        # 统计用户消息数量（排除系统消息和assistant开场白）
+        user_messages = [msg for msg in messages if msg.get("role") == "user"]
+        if len(user_messages) != 1:
+            return  # 不是首次用户消息，跳过
+
+        # 获取首次用户消息内容
+        first_user_message = user_messages[0].get("content", "").strip()
+        if not first_user_message or len(first_user_message) < 5:
+            return  # 消息太短，不适合生成标题
+
+        # 准备标题生成提示
+        title_prompt = f"""请为以下用户消息生成一个简洁的对话标题。要求：
+1. 标题长度控制在3-15个字符
+2. 准确概括用户的核心需求或问题
+3. 使用简洁明了的中文表达
+4. 避免使用"关于"、"如何"等冗余词汇
+5. 直接返回标题，不要解释
+
+用户消息：{first_user_message}
+
+标题："""
+
+        # 获取对话的dialog配置，使用相同的LLM设置
+        from api.db.services.dialog_service import DialogService
+        e, dia = DialogService.get_by_id(conv.dialog_id)
+        if not e or not dia:
+            return
+
+        # 构造标题生成的消息
+        title_messages = [{"role": "user", "content": title_prompt}]
+
+        # 使用dialog的chat功能生成标题
+        from api.db.services.dialog_service import chat
+        generated_title = None
+
+        # 使用较低的temperature以获得更稳定的标题
+        title_req = {
+            "temperature": 0.3,
+            "stream": False
+        }
+
+        for ans in chat(dia, title_messages, False, **title_req):
+            if ans.get("answer"):
+                # 清理生成的标题
+                generated_title = ans["answer"].strip()
+                # 移除可能的引号和多余字符
+                generated_title = generated_title.strip("\"'。、！？")
+                # 限制长度
+                if len(generated_title) > 15:
+                    generated_title = generated_title[:15]
+                break
+
+        if generated_title and len(generated_title) >= 2:
+            # 更新对话标题
+            print(f"[TITLE_GEN] Updating conversation {conv.id} title from '{conv.name}' to '{generated_title}'")
+            ConversationService.update_by_id(conv.id, {"name": generated_title})
+            conv.name = generated_title
+        else:
+            print(f"[TITLE_GEN] Failed to generate valid title for conversation {conv.id}")
+
+    except Exception as e:
+        print(f"[TITLE_GEN] Error generating conversation title: {e}")
+        traceback.print_exc()
+
+
 def get_agent_as_dialog(agent_id, user_id=None):
     """从agent_config表获取agent并转换为dialog格式，支持权限验证"""
     try:
@@ -655,6 +730,13 @@ def completion():
                     ans = structure_answer(conv, ans, message_id, conv.id)
                     yield "data:" + json.dumps({"code": 0, "message": "", "data": ans}, ensure_ascii=False) + "\n\n"
                 ConversationService.update_by_id(conv.id, conv.to_dict())
+
+                # 检查是否需要生成智能标题
+                try:
+                    generate_conversation_title_if_needed(conv, msg)
+                except Exception as title_error:
+                    print(f"Failed to generate conversation title: {title_error}")
+
             except Exception as e:
                 traceback.print_exc()
                 yield "data:" + json.dumps({"code": 500, "message": str(e), "data": {"answer": "**ERROR**: " + str(e), "reference": []}}, ensure_ascii=False) + "\n\n"
@@ -674,6 +756,13 @@ def completion():
                 answer = structure_answer(conv, ans, message_id, req["conversation_id"])
                 ConversationService.update_by_id(conv.id, conv.to_dict())
                 break
+
+            # 检查是否需要生成智能标题
+            try:
+                generate_conversation_title_if_needed(conv, msg)
+            except Exception as title_error:
+                print(f"Failed to generate conversation title: {title_error}")
+
             return get_json_result(data=answer)
     except Exception as e:
         return server_error_response(e)
