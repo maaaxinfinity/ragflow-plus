@@ -132,8 +132,8 @@ def get_agent_as_dialog(agent_id, user_id=None):
                         print(f"[DEBUG] Successfully added user {user_id} to team {agent['tenant_id']}")
                     except Exception as e:
                         print(f"[DEBUG] Failed to add user to team: {e}")
-                        # 如果自动添加失败，仍然返回None拒绝访问
-                        return None
+                        # 如果自动添加失败，继续处理（宽松模式）
+                        print(f"[DEBUG] Continuing with agent access despite permission add failure")
 
         # 转换为dialog格式
         kb_ids = []

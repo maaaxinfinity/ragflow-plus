@@ -927,7 +927,7 @@ class Dialog(DataBaseModel):
 
 class Conversation(DataBaseModel):
     id = CharField(max_length=32, primary_key=True)
-    dialog_id = CharField(max_length=32, null=False, index=True)
+    dialog_id = CharField(max_length=64, null=False, index=True)  # 增加长度以支持agent_前缀
     name = CharField(max_length=255, null=True, help_text="converastion name", index=True)
     message = JSONField(null=True)
     reference = JSONField(null=True, default=[])

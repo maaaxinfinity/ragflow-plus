@@ -100,19 +100,63 @@ class DialogService(CommonService):
             if not agent:
                 return False, None
 
-            # Parse kb_ids properly
+            # Parse kb_ids properly - handle heavily escaped JSON
             kb_ids = []
             try:
                 if agent.get('kb_ids'):
                     kb_ids_str = agent['kb_ids']
-                    # Remove extra escaping layers
-                    while isinstance(kb_ids_str, str) and kb_ids_str.startswith('"') and kb_ids_str.endswith('"'):
-                        kb_ids_str = json.loads(kb_ids_str)
-                    if isinstance(kb_ids_str, list):
-                        kb_ids = kb_ids_str
-                    elif isinstance(kb_ids_str, str):
-                        kb_ids = json.loads(kb_ids_str)
-            except Exception:
+                    print(f"[DEBUG] Original kb_ids: {kb_ids_str}")
+
+                    # Handle heavily escaped JSON strings
+                    max_iterations = 20  # Prevent infinite loops
+                    iteration = 0
+
+                    while isinstance(kb_ids_str, str) and iteration < max_iterations:
+                        iteration += 1
+                        # Try to parse as JSON
+                        try:
+                            parsed = json.loads(kb_ids_str)
+                            if isinstance(parsed, list):
+                                kb_ids = parsed
+                                break
+                            elif isinstance(parsed, str):
+                                kb_ids_str = parsed
+                                continue
+                            else:
+                                # If it's not a string or list, we're done
+                                break
+                        except json.JSONDecodeError:
+                            # If JSON parsing fails, try to clean the string
+                            if kb_ids_str.startswith('"') and kb_ids_str.endswith('"'):
+                                kb_ids_str = kb_ids_str[1:-1]  # Remove outer quotes
+                                # Unescape backslashes
+                                kb_ids_str = kb_ids_str.replace('\\\\', '\\').replace('\\"', '"')
+                                continue
+                            else:
+                                # Can't parse further, give up
+                                break
+
+                    print(f"[DEBUG] Parsed kb_ids after {iteration} iterations: {kb_ids}")
+
+                    # Final fallback: if still a string, try to find [] pattern
+                    if not kb_ids and isinstance(kb_ids_str, str):
+                        if '[]' in kb_ids_str:
+                            kb_ids = []
+                        else:
+                            # Try regex to extract JSON array pattern
+                            import re
+                            array_match = re.search(r'\[([^\[\]]*)\]', kb_ids_str)
+                            if array_match:
+                                array_content = array_match.group(1).strip()
+                                if not array_content:
+                                    kb_ids = []
+                                else:
+                                    # Try to parse the content as comma-separated values
+                                    kb_ids = [item.strip().strip('"\'') for item in array_content.split(',')]
+                                    kb_ids = [item for item in kb_ids if item]  # Remove empty items
+
+            except Exception as e:
+                print(f"[DEBUG] Failed to parse kb_ids: {e}")
                 kb_ids = []
 
             # Create a virtual dialog object from agent
