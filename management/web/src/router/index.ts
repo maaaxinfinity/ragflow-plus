@@ -170,6 +170,42 @@ export const constantRoutes: RouteRecordRaw[] = [
         }
       }
     ]
+  },
+  {
+    path: "/model-setting",
+    component: Layouts,
+    redirect: "/model-setting/index",
+    children: [
+      {
+        path: "index",
+        component: () => import("@/pages/model-setting/index.vue"),
+        name: "ModelSetting",
+        meta: {
+          title: "模型设置",
+          svgIcon: "user-config",
+          affix: false,
+          keepAlive: true
+        }
+      }
+    ]
+  },
+  {
+    path: "/api-setting",
+    component: Layouts,
+    redirect: "/api-setting/index",
+    children: [
+      {
+        path: "index",
+        component: () => import("@/pages/api-setting/index.vue"),
+        name: "ApiSetting",
+        meta: {
+          title: "API设置",
+          svgIcon: "api",
+          affix: false,
+          keepAlive: true
+        }
+      }
+    ]
   }
 ]
 
