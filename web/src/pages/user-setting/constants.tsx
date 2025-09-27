@@ -1,7 +1,5 @@
 import {
-  ApiIcon,
   LogOutIcon,
-  ModelProviderIcon,
   PasswordIcon,
   ProfileIcon,
   TeamIcon,
@@ -13,11 +11,9 @@ import { MonitorOutlined } from '@ant-design/icons';
 export const UserSettingIconMap = {
   [UserSettingRouteKey.Profile]: <ProfileIcon />,
   [UserSettingRouteKey.Password]: <PasswordIcon />,
-  [UserSettingRouteKey.Model]: <ModelProviderIcon />,
   [UserSettingRouteKey.System]: <MonitorOutlined style={{ fontSize: 24 }} />,
   [UserSettingRouteKey.Team]: <TeamIcon />,
   [UserSettingRouteKey.Logout]: <LogOutIcon />,
-  [UserSettingRouteKey.Api]: <ApiIcon />,
 };
 
 export * from '@/constants/setting';

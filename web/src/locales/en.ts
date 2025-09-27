@@ -549,7 +549,8 @@ This auto-tag feature enhances retrieval by adding another layer of domain-speci
       tavilyApiKeyMessage: 'Please enter your Tavily API Key',
       tavilyApiKeyHelp: 'How to get it?',
       crossLanguageSearch: 'Cross-language search',
-      crossLanguageSearchTip: 'When enabled, Chinese queries will be automatically translated to English for retrieval',
+      crossLanguageSearchTip:
+        'When enabled, Chinese queries will be automatically translated to English for retrieval',
     },
     write: {
       writeDocument: 'Document Writing',
@@ -769,7 +770,7 @@ This auto-tag feature enhances retrieval by adding another layer of domain-speci
         'Please input Google Cloud Service Account Key in base64 format',
       addGoogleRegion: 'Google Cloud Region',
       GoogleRegionMessage: 'Please input Google Cloud Region',
-      modelProvidersWarn: `Please add both embedding model and LLM in <b>Settings > Model providers</b>  firstly. Then, set them in 'System model settings'.`,
+      modelProvidersWarn: `Please contact your administrator to configure embedding model and LLM in the management system firstly. Model providers are now managed centrally.`,
       apiVersion: 'API-Version',
       apiVersionMessage: 'Please input API version',
       add: 'Add',
