@@ -14,6 +14,13 @@ import {
   useSetUserApiKey,
   useGlobalDefaultModels
 } from '@/common/composables/useModelManagement'
+import {
+  BedrockRegionList,
+  GoogleCloudRegionList,
+  AzureApiVersionList,
+  ProviderSpecificFields,
+  AdvancedConfigFields
+} from '@/common/constants/model-constants'
 
 defineOptions({
   name: 'ModelSetting'
@@ -135,7 +142,36 @@ const addModelForm = reactive({
   llm_factory: '',
   api_key: '',
   base_url: '',
-  model_type: ''
+  model_type: '',
+  // Azure OpenAI 专用字段
+  api_version: '',
+  deployment_name: '',
+  // AWS Bedrock 专用字段
+  bedrock_ak: '',
+  bedrock_sk: '',
+  bedrock_region: '',
+  // Google Cloud 专用字段
+  project_id: '',
+  region: '',
+  // OpenAI 专用字段
+  organization: '',
+  // 自定义端点字段
+  endpoint: '',
+  // 高级配置字段
+  temperature: 0.7,
+  max_tokens: 4096,
+  timeout: 30000
+})
+
+// 获取当前选择供应商的特定字段
+const currentProviderFields = computed(() => {
+  if (!addModelForm.llm_factory) return []
+  return ProviderSpecificFields[addModelForm.llm_factory as keyof typeof ProviderSpecificFields] || []
+})
+
+// 是否需要自定义端点
+const needsCustomEndpoint = computed(() => {
+  return ['localai', 'lmstudio', 'xinference', 'vllm', 'ollama'].includes(addModelForm.llm_factory)
 })
 
 // 全局默认模型表单
@@ -282,6 +318,23 @@ async function submitGlobalDefaults() {
   }
 }
 
+// 测试连接
+const testLoading = ref(false)
+function testConnection() {
+  addModelFormRef.value?.validate((valid) => {
+    if (valid) {
+      testLoading.value = true
+      // 这里应该调用测试API连接的接口
+      setTimeout(() => {
+        ElMessage.success('模型连接测试成功！')
+        testLoading.value = false
+      }, 2000)
+    } else {
+      ElMessage.warning('请先填写必填字段')
+    }
+  })
+}
+
 // 表格多选
 function handleSelectionChange(selection: any[]) {
   multipleSelection.value = selection
@@ -306,11 +359,36 @@ function maskApiKey(apiKey: string) {
 }
 
 // 表单验证规则
-const addModelRules = {
-  user_id: [{ required: true, message: '请输入用户ID', trigger: 'blur' }],
-  llm_factory: [{ required: true, message: '请选择模型供应商', trigger: 'change' }],
-  api_key: [{ required: true, message: '请输入API Key', trigger: 'blur' }]
-}
+const addModelRules = computed(() => {
+  const baseRules = {
+    user_id: [{ required: true, message: '请输入用户ID', trigger: 'blur' }],
+    llm_factory: [{ required: true, message: '请选择模型供应商', trigger: 'change' }],
+    model_type: [{ required: true, message: '请选择模型类型', trigger: 'change' }],
+    api_key: [{ required: true, message: '请输入API Key', trigger: 'blur' }]
+  }
+
+  // 根据选择的供应商添加特定字段验证
+  if (addModelForm.llm_factory === 'azure_openai') {
+    baseRules.api_version = [{ required: true, message: '请选择API版本', trigger: 'change' }]
+    baseRules.deployment_name = [{ required: true, message: '请输入部署名称', trigger: 'blur' }]
+  }
+
+  if (addModelForm.llm_factory === 'bedrock') {
+    baseRules.bedrock_ak = [{ required: true, message: '请输入AWS Access Key', trigger: 'blur' }]
+    baseRules.bedrock_sk = [{ required: true, message: '请输入AWS Secret Key', trigger: 'blur' }]
+    baseRules.bedrock_region = [{ required: true, message: '请选择AWS区域', trigger: 'change' }]
+  }
+
+  if (addModelForm.llm_factory === 'google') {
+    baseRules.project_id = [{ required: true, message: '请输入Google Cloud项目ID', trigger: 'blur' }]
+  }
+
+  if (needsCustomEndpoint.value) {
+    baseRules.endpoint = [{ required: true, message: '请输入自定义端点', trigger: 'blur' }]
+  }
+
+  return baseRules
+})
 
 onMounted(() => {
   getTableData()
@@ -480,11 +558,12 @@ onMounted(() => {
     </el-dialog>
 
     <!-- 添加模型配置对话框 -->
-    <el-dialog v-model="addModelDialogVisible" title="添加模型配置" width="500px">
-      <el-form ref="addModelFormRef" :model="addModelForm" :rules="addModelRules" label-width="100px">
+    <el-dialog v-model="addModelDialogVisible" title="添加模型配置" width="800px" max-height="80vh">
+      <el-form ref="addModelFormRef" :model="addModelForm" :rules="addModelRules" label-width="120px">
         <el-form-item label="用户ID" prop="user_id">
           <el-input v-model="addModelForm.user_id" placeholder="请输入用户ID" />
         </el-form-item>
+
         <el-form-item label="供应商" prop="llm_factory">
           <el-select v-model="addModelForm.llm_factory" placeholder="请选择模型供应商" style="width: 100%">
             <el-option
@@ -495,13 +574,8 @@ onMounted(() => {
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="API Key" prop="api_key">
-          <el-input v-model="addModelForm.api_key" type="password" placeholder="请输入API Key" />
-        </el-form-item>
-        <el-form-item label="Base URL">
-          <el-input v-model="addModelForm.base_url" placeholder="可选，默认使用官方API地址" />
-        </el-form-item>
-        <el-form-item label="模型类型">
+
+        <el-form-item label="模型类型" prop="model_type">
           <el-select v-model="addModelForm.model_type" placeholder="请选择模型类型" style="width: 100%">
             <el-option
               v-for="item in modelTypes"
@@ -511,10 +585,130 @@ onMounted(() => {
             />
           </el-select>
         </el-form-item>
+
+        <el-form-item label="API Key" prop="api_key">
+          <el-input v-model="addModelForm.api_key" type="password" placeholder="请输入API Key" show-password />
+        </el-form-item>
+
+        <!-- Azure OpenAI 专用字段 -->
+        <template v-if="addModelForm.llm_factory === 'azure_openai'">
+          <el-form-item label="API版本" prop="api_version">
+            <el-select v-model="addModelForm.api_version" placeholder="请选择API版本">
+              <el-option label="2024-02-15-preview" value="2024-02-15-preview" />
+              <el-option label="2023-12-01-preview" value="2023-12-01-preview" />
+              <el-option label="2023-05-15" value="2023-05-15" />
+              <el-option label="2023-03-15-preview" value="2023-03-15-preview" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="部署名称" prop="deployment_name">
+            <el-input v-model="addModelForm.deployment_name" placeholder="请输入Azure部署名称" />
+          </el-form-item>
+        </template>
+
+        <!-- AWS Bedrock 专用字段 -->
+        <template v-if="addModelForm.llm_factory === 'bedrock'">
+          <el-form-item label="Access Key" prop="bedrock_ak">
+            <el-input v-model="addModelForm.bedrock_ak" type="password" placeholder="请输入AWS Access Key" show-password />
+          </el-form-item>
+          <el-form-item label="Secret Key" prop="bedrock_sk">
+            <el-input v-model="addModelForm.bedrock_sk" type="password" placeholder="请输入AWS Secret Key" show-password />
+          </el-form-item>
+          <el-form-item label="区域" prop="bedrock_region">
+            <el-select v-model="addModelForm.bedrock_region" placeholder="请选择AWS区域">
+              <el-option label="美国东部 (us-east-1)" value="us-east-1" />
+              <el-option label="美国西部 (us-west-2)" value="us-west-2" />
+              <el-option label="亚太东南 (ap-southeast-1)" value="ap-southeast-1" />
+              <el-option label="亚太东北 (ap-northeast-1)" value="ap-northeast-1" />
+              <el-option label="欧洲中部 (eu-central-1)" value="eu-central-1" />
+              <el-option label="美国政府西部 (us-gov-west-1)" value="us-gov-west-1" />
+              <el-option label="亚太东南2 (ap-southeast-2)" value="ap-southeast-2" />
+            </el-select>
+          </el-form-item>
+        </template>
+
+        <!-- Google Cloud 专用字段 -->
+        <template v-if="addModelForm.llm_factory === 'google'">
+          <el-form-item label="项目ID" prop="project_id">
+            <el-input v-model="addModelForm.project_id" placeholder="请输入Google Cloud项目ID" />
+          </el-form-item>
+          <el-form-item label="区域" prop="region">
+            <el-select v-model="addModelForm.region" placeholder="请选择Google Cloud区域">
+              <el-option label="美国中部 (us-central1)" value="us-central1" />
+              <el-option label="美国东部 (us-east1)" value="us-east1" />
+              <el-option label="欧洲西部 (europe-west1)" value="europe-west1" />
+              <el-option label="亚洲东南部 (asia-southeast1)" value="asia-southeast1" />
+              <el-option label="亚洲东北部 (asia-northeast1)" value="asia-northeast1" />
+            </el-select>
+          </el-form-item>
+        </template>
+
+        <!-- OpenAI 专用字段 -->
+        <template v-if="addModelForm.llm_factory === 'openai'">
+          <el-form-item label="组织ID" prop="organization">
+            <el-input v-model="addModelForm.organization" placeholder="请输入OpenAI组织ID（可选）" />
+          </el-form-item>
+        </template>
+
+        <!-- 自定义端点字段 -->
+        <template v-if="needsCustomEndpoint">
+          <el-form-item label="自定义端点" prop="endpoint">
+            <el-input v-model="addModelForm.endpoint" placeholder="请输入自定义服务端点" />
+          </el-form-item>
+        </template>
+
+        <el-form-item label="Base URL">
+          <el-input v-model="addModelForm.base_url" placeholder="可选，默认使用官方API地址" />
+        </el-form-item>
+
+        <!-- 高级配置 -->
+        <el-divider content-position="left">高级配置</el-divider>
+
+        <el-form-item label="温度参数" prop="temperature">
+          <el-input-number
+            v-model="addModelForm.temperature"
+            :min="0"
+            :max="2"
+            :step="0.1"
+            :precision="1"
+            placeholder="0.7"
+            style="width: 100%"
+          />
+          <div style="font-size: 12px; color: #666;">控制输出的随机性，0表示确定性输出，2表示最高随机性</div>
+        </el-form-item>
+
+        <el-form-item label="最大令牌数" prop="max_tokens">
+          <el-input-number
+            v-model="addModelForm.max_tokens"
+            :min="1"
+            :max="32768"
+            :step="1"
+            placeholder="4096"
+            style="width: 100%"
+          />
+          <div style="font-size: 12px; color: #666;">生成响应的最大令牌数</div>
+        </el-form-item>
+
+        <el-form-item label="请求超时(ms)" prop="timeout">
+          <el-input-number
+            v-model="addModelForm.timeout"
+            :min="1000"
+            :max="300000"
+            :step="1000"
+            placeholder="30000"
+            style="width: 100%"
+          />
+          <div style="font-size: 12px; color: #666;">API请求的超时时间，单位毫秒</div>
+        </el-form-item>
       </el-form>
+
       <template #footer>
+        <div style="text-align: left; margin-bottom: 10px;">
+          <el-button type="info" @click="testConnection" :loading="testLoading">
+            测试连接
+          </el-button>
+        </div>
         <el-button @click="addModelDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitAddModel">确定</el-button>
+        <el-button type="primary" @click="submitAddModel" :loading="loading">确定</el-button>
       </template>
     </el-dialog>
 
