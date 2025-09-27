@@ -19,6 +19,11 @@ defineOptions({
   name: 'ModelSetting'
 })
 
+// Management专注于全局管理所有模型，包括：
+// 1. 之前用户在web端创建的模型配置
+// 2. 通过management新创建的全局模型
+// 3. 所有模型的统一管理和维护
+
 const loading = ref<boolean>(false)
 const { paginationData, handleCurrentChange, handleSizeChange } = usePagination()
 
@@ -312,8 +317,24 @@ const addModelRules = {
   api_key: [{ required: true, message: '请输入API Key', trigger: 'blur' }]
 }
 
-onMounted(() => {
-  getTableData()
+  // 动态添加供应商特定字段的验证规则
+  currentProviderFields.value.forEach(field => {
+    if (field.required) {
+      const trigger = field.type === 'select' ? 'change' : 'blur'
+      baseRules[field.name] = [{
+        required: true,
+        message: `请${field.type === 'select' ? '选择' : '输入'}${field.label}`,
+        trigger
+      }]
+
+      // 数字类型添加额外验证
+      if (field.type === 'number') {
+        baseRules[field.name].push({ type: 'number', min: field.min || 0 })
+      }
+    }
+  })
+
+  return baseRules
 })
 </script>
 

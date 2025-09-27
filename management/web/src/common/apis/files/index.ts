@@ -129,16 +129,19 @@ export function deleteAllFilesApi() {
 }
 
 /**
- * 上传文件
+ * 上传文件（支持文件树结构）
  */
 export function uploadFileApi(formData: FormData) {
   return request<{
     code: number
     data: Array<{
+      id: string
       name: string
       size: number
       type: string
       status: string
+      parent_id?: string
+      path: string
     }>
     message: string
   }>({
@@ -147,6 +150,73 @@ export function uploadFileApi(formData: FormData) {
     data: formData,
     headers: {
       "Content-Type": "multipart/form-data"
+    }
+  })
+}
+
+/**
+ * 批量上传文件并保留目录结构
+ * @param files 文件列表，包含相对路径信息
+ * @param onProgress 上传进度回调
+ */
+export function uploadFilesWithStructureApi(
+  files: Array<{
+    file: File
+    relativePath: string
+    parentPath?: string
+  }>,
+  onProgress?: (progress: number) => void
+) {
+  const formData = new FormData()
+
+  // 添加文件并保留路径信息
+  files.forEach((fileInfo, index) => {
+    formData.append('files', fileInfo.file)
+    formData.append(`file_paths`, fileInfo.relativePath)
+    if (fileInfo.parentPath) {
+      formData.append(`parent_paths`, fileInfo.parentPath)
+    }
+  })
+
+  // 标识保留目录结构
+  formData.append('preserve_structure', 'true')
+
+  return request<{
+    code: number
+    data: {
+      uploaded_files: Array<{
+        id: string
+        name: string
+        size: number
+        type: string
+        path: string
+        parent_id?: string
+        status: 'success' | 'failed'
+        error?: string
+      }>
+      created_folders: Array<{
+        id: string
+        name: string
+        path: string
+        parent_id?: string
+      }>
+      total_files: number
+      success_count: number
+      failed_count: number
+    }
+    message: string
+  }>({
+    url: "/api/v1/files/upload_with_structure",
+    method: "post",
+    data: formData,
+    headers: {
+      "Content-Type": "multipart/form-data"
+    },
+    onUploadProgress: (progressEvent) => {
+      if (onProgress && progressEvent.total) {
+        const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+        onProgress(progress)
+      }
     }
   })
 }

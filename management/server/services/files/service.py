@@ -882,3 +882,282 @@ def merge_chunks(upload_id, file_name, total_chunks, parent_id=None):
     except Exception as e:
         print(f"合并分块失败: {str(e)}")
         return {"code": 500, "message": f"合并分块失败: {str(e)}"}
+
+
+def upload_files_with_folder_structure(files, file_paths, parent_paths=None, user_id=None):
+    """
+    批量上传文件并保留目录结构
+
+    Args:
+        files: 上传的文件列表
+        file_paths: 文件相对路径列表
+        parent_paths: 父路径列表（可选）
+        user_id: 用户ID（可选）
+
+    Returns:
+        dict: 上传结果，包含创建的文件夹和上传的文件信息
+    """
+    if user_id is None:
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+
+            # 查询创建时间最早的用户ID
+            query_earliest_user = """
+            SELECT id FROM user
+            WHERE create_time = (SELECT MIN(create_time) FROM user)
+            LIMIT 1
+            """
+            cursor.execute(query_earliest_user)
+            earliest_user = cursor.fetchone()
+
+            if earliest_user:
+                user_id = earliest_user["id"]
+            else:
+                user_id = "system"
+
+            cursor.close()
+            conn.close()
+        except Exception as e:
+            print(f"查询最早用户ID失败: {str(e)}")
+            user_id = "system"
+
+    uploaded_files = []
+    created_folders = []
+    failed_files = []
+    folder_id_cache = {}  # 缓存已创建的文件夹ID
+
+    try:
+        # 确保根目录文件夹存在
+        root_folder_id = "root"
+        folder_id_cache[""] = root_folder_id
+        folder_id_cache["."] = root_folder_id
+
+        for i, (file, file_path) in enumerate(zip(files, file_paths)):
+            try:
+                if file.filename == "":
+                    continue
+
+                if not allowed_file(file.filename):
+                    failed_files.append({
+                        "file": file.filename,
+                        "path": file_path,
+                        "error": "不支持的文件类型",
+                        "status": "failed"
+                    })
+                    continue
+
+                # 解析文件路径，提取目录结构
+                path_parts = file_path.replace("\\", "/").split("/")
+                filename = path_parts[-1]
+                directory_parts = path_parts[:-1]
+
+                # 确保所有必要的文件夹都存在
+                current_parent_id = root_folder_id
+                current_path = ""
+
+                for dir_name in directory_parts:
+                    if not dir_name:  # 跳过空的目录名
+                        continue
+
+                    current_path = f"{current_path}/{dir_name}" if current_path else dir_name
+
+                    # 检查文件夹是否已在缓存中
+                    if current_path not in folder_id_cache:
+                        # 检查数据库中是否已存在该文件夹
+                        existing_folder = find_folder_by_path(current_parent_id, dir_name)
+
+                        if existing_folder:
+                            folder_id_cache[current_path] = existing_folder["id"]
+                            current_parent_id = existing_folder["id"]
+                        else:
+                            # 创建新文件夹
+                            folder_data = create_folder(dir_name, current_parent_id)
+                            folder_id_cache[current_path] = folder_data["id"]
+                            current_parent_id = folder_data["id"]
+
+                            created_folders.append({
+                                "id": folder_data["id"],
+                                "name": dir_name,
+                                "path": current_path,
+                                "parent_id": folder_data["parent_id"]
+                            })
+                    else:
+                        current_parent_id = folder_id_cache[current_path]
+
+                # 上传文件到最终的父文件夹
+                original_filename = file.filename
+                name, ext = os.path.splitext(original_filename)
+                safe_name = re.sub(r'[\\/:*?"<>|]', "_", name)
+
+                if not safe_name or safe_name.strip() == "":
+                    safe_name = f"file_{get_uuid()[:8]}"
+
+                processed_filename = safe_name + ext.lower()
+                filepath = os.path.join(UPLOAD_FOLDER, processed_filename)
+
+                # 保存文件到本地临时目录
+                os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+                file.save(filepath)
+
+                # 获取文件类型
+                filetype = filename_type(processed_filename)
+                if filetype == FileType.OTHER.value:
+                    failed_files.append({
+                        "file": filename,
+                        "path": file_path,
+                        "error": "不支持的文件类型",
+                        "status": "failed"
+                    })
+                    continue
+
+                # 上传到MinIO
+                minio_client = get_minio_client()
+                location = processed_filename
+
+                # 确保bucket存在
+                if not minio_client.bucket_exists(current_parent_id):
+                    minio_client.make_bucket(current_parent_id)
+
+                # 上传到MinIO
+                with open(filepath, "rb") as file_data:
+                    minio_client.put_object(
+                        bucket_name=current_parent_id,
+                        object_name=location,
+                        data=file_data,
+                        length=os.path.getsize(filepath)
+                    )
+
+                # 创建文件记录
+                file_id = get_uuid()
+                current_time = int(datetime.now().timestamp())
+                current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+                file_record = {
+                    "id": file_id,
+                    "parent_id": current_parent_id,
+                    "tenant_id": user_id,
+                    "created_by": user_id,
+                    "name": processed_filename,
+                    "type": filetype,
+                    "size": os.path.getsize(filepath),
+                    "location": location,
+                    "source_type": FileSource.LOCAL.value,
+                    "create_time": current_time,
+                    "create_date": current_date,
+                    "update_time": current_time,
+                    "update_date": current_date,
+                }
+
+                # 保存文件记录到数据库
+                conn = get_db_connection()
+                try:
+                    cursor = conn.cursor()
+
+                    columns = ", ".join(file_record.keys())
+                    placeholders = ", ".join(["%s"] * len(file_record))
+                    query = f"INSERT INTO file ({columns}) VALUES ({placeholders})"
+                    cursor.execute(query, list(file_record.values()))
+
+                    conn.commit()
+
+                    uploaded_files.append({
+                        "id": file_id,
+                        "name": processed_filename,
+                        "size": file_record["size"],
+                        "type": filetype,
+                        "path": file_path,
+                        "parent_id": current_parent_id,
+                        "status": "success"
+                    })
+
+                except Exception as e:
+                    conn.rollback()
+                    failed_files.append({
+                        "file": filename,
+                        "path": file_path,
+                        "error": f"数据库操作失败: {str(e)}",
+                        "status": "failed"
+                    })
+                finally:
+                    cursor.close()
+                    conn.close()
+
+                # 删除临时文件
+                if os.path.exists(filepath):
+                    os.remove(filepath)
+
+            except Exception as e:
+                failed_files.append({
+                    "file": file.filename if hasattr(file, 'filename') else f"file_{i}",
+                    "path": file_path,
+                    "error": str(e),
+                    "status": "failed"
+                })
+
+        # 构建返回结果
+        result = {
+            "code": 0,
+            "data": {
+                "uploaded_files": uploaded_files,
+                "created_folders": created_folders,
+                "total_files": len(files),
+                "success_count": len(uploaded_files),
+                "failed_count": len(failed_files)
+            },
+            "message": f"上传完成：成功 {len(uploaded_files)}/{len(files)} 个文件，创建 {len(created_folders)} 个文件夹"
+        }
+
+        if failed_files:
+            result["data"]["failed_files"] = failed_files
+
+        return result
+
+    except Exception as e:
+        print(f"批量上传文件时发生错误: {str(e)}")
+        return {
+            "code": 500,
+            "message": f"批量上传失败: {str(e)}",
+            "data": {
+                "uploaded_files": uploaded_files,
+                "created_folders": created_folders,
+                "failed_files": failed_files,
+                "total_files": len(files),
+                "success_count": len(uploaded_files),
+                "failed_count": len(failed_files)
+            }
+        }
+
+
+def find_folder_by_path(parent_id, folder_name):
+    """
+    在指定父目录下查找文件夹
+
+    Args:
+        parent_id: 父目录ID
+        folder_name: 文件夹名称
+
+    Returns:
+        dict: 文件夹信息，如果不存在则返回None
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        query = """
+            SELECT id, name, parent_id, type
+            FROM file
+            WHERE parent_id = %s AND name = %s AND type = 'folder'
+            LIMIT 1
+        """
+        cursor.execute(query, [parent_id, folder_name])
+        folder = cursor.fetchone()
+
+        cursor.close()
+        conn.close()
+
+        return folder
+
+    except Exception as e:
+        print(f"查找文件夹失败: {str(e)}")
+        return None
