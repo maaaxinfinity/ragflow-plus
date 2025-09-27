@@ -425,21 +425,29 @@ const Chat = () => {
               ))}
             </Spin>
             {conversationList.length > 0 && (
-              <Flex justify="center" style={{ paddingTop: 16 }}>
-                <DeleteOutlined
+              <div style={{ paddingTop: 16 }}>
+                <Card
+                  hoverable
                   style={{
-                    color: '#ff4d4f',
-                    fontSize: '16px',
-                    cursor: 'pointer',
-                    padding: '8px',
-                    borderRadius: '4px',
-                    border: '1px solid #ff4d4f',
+                    borderColor: '#ff4d4f',
                     backgroundColor: 'transparent',
                   }}
-                  title="删除所有未书签对话"
                   onClick={handleDeleteAllConversations}
-                />
-              </Flex>
+                >
+                  <Flex justify="center" align="center">
+                    <DeleteOutlined
+                      style={{
+                        color: '#ff4d4f',
+                        fontSize: '16px',
+                        marginRight: '8px',
+                      }}
+                    />
+                    <span style={{ color: '#ff4d4f', fontSize: '14px' }}>
+                      删除所有未书签对话
+                    </span>
+                  </Flex>
+                </Card>
+              </div>
             )}
           </Flex>
         </Flex>

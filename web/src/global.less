@@ -1,5 +1,14 @@
 @import url(./inter.less);
-@import url('https://fontsapi.zeoseven.com/553/main/result.css');
+
+@font-face {
+  font-family: 'ZSFT-ENMin-553';
+  src:
+    url('https://fontsapi.zeoseven.com/553/main.woff2') format('woff2'),
+    url('https://fontsapi-storage.zeoseven.com/553/main.woff2') format('woff2');
+  unicode-range:
+    U+0061-007A, U+0041-005A, U+0030-0039, U+002E, U+002C, U+0021, U+003F,
+    U+003A, U+003B, U+002D;
+}
 
 html {
   height: 100%;
@@ -7,7 +16,7 @@ html {
 }
 
 body {
-  font-family: 'Hana Meatball', Inter, sans-serif;
+  font-family: 'ZSFT-ENMin-553', Inter, sans-serif;
   font-weight: normal;
   margin: 0;
   height: 100%;
