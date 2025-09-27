@@ -492,7 +492,7 @@ onActivated(() => {
         </template>
 
         <!-- 自定义端点字段 -->
-        <template v-if="['localai', 'lmstudio', 'xinference', 'vllm', 'ollama'].includes(formData.provider)">
+        <template v-if="formData.provider && ['localai', 'lmstudio', 'xinference', 'vllm', 'ollama'].includes(formData.provider)">
           <el-form-item label="自定义端点" prop="endpoint">
             <el-input v-model="formData.endpoint" placeholder="请输入自定义服务端点" />
           </el-form-item>
